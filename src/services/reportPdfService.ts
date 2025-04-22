@@ -1,5 +1,3 @@
-import { v4 as uuidv4 } from 'uuid';
-import { jsPDF } from 'jspdf';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface ReportPdf {
@@ -278,26 +276,6 @@ export const getOfficerReportMaterials = async (reportId: string): Promise<any[]
     if (error) {
       console.error('Error fetching officer report materials:', error);
       
-      const { data: pdfs, error: pdfError } = await supabase
-        .from('report_pdfs')
-        .select('*')
-        .eq('report_id', reportId);
-      
-      if (pdfError) {
-        console.error('Error fetching report PDFs as fallback:', pdfError);
-        return [];
-      }
-      
-      return pdfs.map(pdf => ({
-        pdf_id: pdf.id,
-        pdf_name: pdf.file_name,
-        pdf_url: pdf.file_url,
-        pdf_is_official: pdf.is_official,
-        report_id: pdf.report_id
-      }));
-    }
-    
-    if (!materials || materials.length === 0) {
       const { data: pdfs, error: pdfError } = await supabase
         .from('report_pdfs')
         .select('*')
