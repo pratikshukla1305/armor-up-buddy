@@ -247,7 +247,28 @@ const ReportsList = ({ limit }: ReportListProps) => {
   };
 
   const playVideo = (url: string) => {
-    setSelectedVideo(url);
+    console.log("Attempting to play video:", url);
+    // Check if URL is valid first
+    if (!url) {
+      console.error("Invalid video URL:", url);
+      toast.error("Invalid video URL. The resource may be missing or inaccessible.");
+      return;
+    }
+    
+    // Test if URL is accessible first
+    fetch(url, { method: 'HEAD' })
+      .then(response => {
+        if (!response.ok) {
+          console.error(`Video URL returned status ${response.status}:`, url);
+          toast.error(`Cannot access video (${response.status} error). The file may be missing or inaccessible.`);
+          return;
+        }
+        setSelectedVideo(url);
+      })
+      .catch(error => {
+        console.error("Error accessing video URL:", error);
+        toast.error(`Cannot access video: ${error.message}`);
+      });
   };
 
   const isVideoUrl = (url: string): boolean => {
@@ -456,8 +477,18 @@ const ReportsList = ({ limit }: ReportListProps) => {
                 autoPlay
                 className="w-full h-full"
                 onError={(e) => {
-                  console.error("Video loading error:", e);
-                  toast.error("Failed to load video. The format may be unsupported or the URL is invalid.");
+                  const target = e.target as HTMLVideoElement;
+                  console.error("Video loading error:", {
+                    error: e,
+                    src: target.src,
+                    networkState: target.networkState,
+                    readyState: target.readyState,
+                    error: target.error ? {
+                      code: target.error.code,
+                      message: target.error.message
+                    } : 'No error data'
+                  });
+                  toast.error(`Failed to load video: ${target.error?.message || 'The format may be unsupported or the URL is invalid'}`);
                 }}
               >
                 Your browser does not support the video tag.

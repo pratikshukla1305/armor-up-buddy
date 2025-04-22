@@ -62,8 +62,21 @@ export const submitReportToOfficer = async (reportId: string) => {
 export const getOfficerReports = async () => {
   try {
     console.log("Fetching officer reports...");
+    console.log("Supabase URL:", supabase.supabaseUrl); // Log the supabase URL (without credentials)
+    
+    // First try a simple connection test
+    const { error: testError } = await supabase
+      .from('crime_reports')
+      .select('count')
+      .limit(1);
+    
+    if (testError) {
+      console.error("Initial connection test failed:", testError);
+      throw new Error(`Connection test failed: ${testError.message} (Code: ${testError.code})`);
+    }
     
     // Modify the query to include all related data in a single query
+    console.log("Connection test successful, fetching reports with evidence and PDFs...");
     const { data, error } = await supabase
       .from('crime_reports')
       .select(`
@@ -76,7 +89,7 @@ export const getOfficerReports = async () => {
     
     if (error) {
       console.error("Supabase query error:", error);
-      throw error;
+      throw new Error(`Failed to fetch reports: ${error.message} (Code: ${error.code})`);
     }
     
     console.log("Reports fetched from Supabase:", data);
@@ -84,6 +97,16 @@ export const getOfficerReports = async () => {
     if (!data || data.length === 0) {
       console.log("No reports found in the database");
       return [];
+    }
+    
+    // Log the structure of the first report to debug issues with relations
+    if (data.length > 0) {
+      console.log("First report structure:", JSON.stringify({
+        id: data[0].id,
+        title: data[0].title,
+        evidenceCount: data[0].evidence?.length || 0,
+        pdfsCount: data[0].report_pdfs?.length || 0
+      }));
     }
     
     // Add mock evidence to reports that don't have any (for demo purposes)
@@ -109,6 +132,7 @@ export const getOfficerReports = async () => {
     return processedReports;
   } catch (error: any) {
     console.error('Error fetching officer reports:', error);
+    console.error('Stack trace:', error.stack);
     toast.error(`Failed to load reports: ${error.message}`);
     // Return empty array instead of throwing to prevent UI from breaking
     return [];
@@ -118,6 +142,8 @@ export const getOfficerReports = async () => {
 // Update report status by officer
 export const updateReportStatus = async (reportId: string, status: string, officerNotes?: string) => {
   try {
+    console.log(`Attempting to update report ${reportId} to status: ${status}`);
+    
     // Get valid statuses from the database first to ensure we're using a value that matches the constraint
     const { data: statusInfo, error: statusInfoError } = await supabase
       .from('crime_reports')
@@ -152,6 +178,7 @@ export const updateReportStatus = async (reportId: string, status: string, offic
       .single();
       
     if (fetchError) {
+      console.error('Error fetching current report:', fetchError);
       throw fetchError;
     }
     
@@ -166,7 +193,7 @@ export const updateReportStatus = async (reportId: string, status: string, offic
         .select();
       
       if (error) {
-        console.error('Detailed error:', error);
+        console.error('Detailed update error:', error);
         throw error;
       }
 
