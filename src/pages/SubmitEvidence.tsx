@@ -48,7 +48,6 @@ const SubmitEvidence = () => {
       
       setEvidenceRequests(data || []);
       
-      // If we have a requestId from URL and not set yet, set it
       if (requestIdFromUrl && !selectedCase) {
         setSelectedCase(requestIdFromUrl);
       }
@@ -82,31 +81,35 @@ const SubmitEvidence = () => {
     setIsSubmitting(true);
     
     try {
-      // Create a unique filename if there's a file to upload
       let fileUrl = null;
       if (selectedFile) {
         const fileExt = selectedFile.name.split('.').pop();
         const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
         const filePath = `evidence/${fileName}`;
         
-        // Upload file to storage
         const { error: uploadError, data: uploadData } = await supabase.storage
-          .from('evidence')
-          .upload(filePath, selectedFile);
+          .from('evidences')
+          .upload(filePath, selectedFile, {
+            cacheControl: '3600',
+            upsert: true
+          });
           
-        if (uploadError) throw uploadError;
+        if (uploadError) {
+          console.error("Error uploading file:", uploadError);
+          toast.error("Error uploading file: " + uploadError.message);
+          setIsSubmitting(false);
+          return;
+        }
         
         if (uploadData) {
-          // Get public URL for the uploaded file
           const { data: urlData } = supabase.storage
-            .from('evidence')
+            .from('evidences')
             .getPublicUrl(filePath);
             
           fileUrl = urlData.publicUrl;
         }
       }
       
-      // Insert the evidence response
       const { error: insertError } = await supabase
         .from('evidence_responses')
         .insert({
@@ -123,7 +126,6 @@ const SubmitEvidence = () => {
       toast.success("Your evidence has been submitted successfully");
       setIsSuccess(true);
       
-      // Reset form after delay
       setTimeout(() => {
         setSelectedCase("");
         setDescription("");
@@ -131,7 +133,6 @@ const SubmitEvidence = () => {
         setSelectedFile(null);
         setIsSuccess(false);
         
-        // Redirect back to evidence requests list
         navigate('/help-us');
       }, 3000);
       

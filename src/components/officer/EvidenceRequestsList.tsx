@@ -35,7 +35,7 @@ const EvidenceRequestsList = ({ limit = 5 }: EvidenceRequestsListProps) => {
   const [responses, setResponses] = useState<EvidenceResponse[]>([]);
   const [isLoadingResponses, setIsLoadingResponses] = useState(false);
   const [userProfiles, setUserProfiles] = useState<Record<string, any>>({});
-  
+
   useEffect(() => {
     fetchEvidenceRequests();
   }, []);
@@ -44,7 +44,6 @@ const EvidenceRequestsList = ({ limit = 5 }: EvidenceRequestsListProps) => {
     try {
       setIsLoading(true);
       
-      // Fetch real evidence requests from database
       const { data: requestsData, error } = await supabase
         .from('evidence_requests')
         .select('*')
@@ -54,7 +53,6 @@ const EvidenceRequestsList = ({ limit = 5 }: EvidenceRequestsListProps) => {
       if (error) throw error;
       
       if (requestsData) {
-        // Fetch response counts for each request
         const requestsWithResponses = await Promise.all(
           requestsData.map(async (request) => {
             const { count, error: countError } = await supabase
@@ -96,7 +94,6 @@ const EvidenceRequestsList = ({ limit = 5 }: EvidenceRequestsListProps) => {
       if (responseData && responseData.length > 0) {
         setResponses(responseData);
         
-        // Fetch user profiles for non-anonymous submissions
         const userIds = responseData
           .filter(response => !response.is_anonymous && response.submitted_by)
           .map(response => response.submitted_by);
@@ -141,7 +138,6 @@ const EvidenceRequestsList = ({ limit = 5 }: EvidenceRequestsListProps) => {
 
   const handleCloseRequest = async (requestId: string) => {
     try {
-      // Update the status in the database
       const { error } = await supabase
         .from('evidence_requests')
         .update({ status: 'closed' })
@@ -149,7 +145,6 @@ const EvidenceRequestsList = ({ limit = 5 }: EvidenceRequestsListProps) => {
       
       if (error) throw error;
       
-      // Update the UI
       setRequests(prevRequests => 
         prevRequests.map(request => 
           request.id === requestId ? {...request, status: 'closed'} : request
@@ -174,10 +169,8 @@ const EvidenceRequestsList = ({ limit = 5 }: EvidenceRequestsListProps) => {
       return;
     }
 
-    // Get user profile with phone number
     const userProfile = userProfiles[response.submitted_by];
     if (userProfile && userProfile.phone) {
-      // Open phone dialer if on mobile
       window.open(`tel:${userProfile.phone}`, '_blank');
     } else {
       toast.info("Contact information not available for this user");
@@ -186,7 +179,30 @@ const EvidenceRequestsList = ({ limit = 5 }: EvidenceRequestsListProps) => {
 
   const handleViewEvidence = async (response: EvidenceResponse) => {
     if (response.file_url) {
-      window.open(response.file_url, '_blank');
+      try {
+        if (response.file_url.startsWith('http')) {
+          window.open(response.file_url, '_blank');
+        } else {
+          const { data, error } = supabase.storage
+            .from('evidences')
+            .getPublicUrl(response.file_url);
+            
+          if (error) {
+            console.error("Error getting file URL:", error);
+            toast.error("Error viewing file: " + error.message);
+            return;
+          }
+          
+          if (data && data.publicUrl) {
+            window.open(data.publicUrl, '_blank');
+          } else {
+            toast.error("Cannot get file URL");
+          }
+        }
+      } catch (error: any) {
+        console.error("Error viewing evidence:", error);
+        toast.error("Error viewing file: " + error.message);
+      }
     } else {
       toast.info("This response does not include any files");
     }
@@ -211,7 +227,6 @@ const EvidenceRequestsList = ({ limit = 5 }: EvidenceRequestsListProps) => {
     );
   }
 
-  
   return (
     <div className="space-y-4">
       {requests.slice(0, limit).map((request) => (
@@ -222,7 +237,7 @@ const EvidenceRequestsList = ({ limit = 5 }: EvidenceRequestsListProps) => {
               <h3 className="font-medium">{request.title}</h3>
             </div>
             <Badge 
-              className={`
+              className={``
                 ${request.status === 'active' ? 'bg-green-100 text-green-800' : 
                   request.status === 'expired' ? 'bg-amber-100 text-amber-800' : 
                   'bg-gray-100 text-gray-800'}
@@ -281,7 +296,6 @@ const EvidenceRequestsList = ({ limit = 5 }: EvidenceRequestsListProps) => {
         </Card>
       ))}
       
-      {/* View Request Dialog */}
       <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -293,7 +307,7 @@ const EvidenceRequestsList = ({ limit = 5 }: EvidenceRequestsListProps) => {
               <div>
                 <h3 className="text-lg font-medium mb-1">{selectedRequest.title}</h3>
                 <Badge 
-                  className={`
+                  className={``
                     ${selectedRequest.status === 'active' ? 'bg-green-100 text-green-800' : 
                       selectedRequest.status === 'expired' ? 'bg-amber-100 text-amber-800' : 
                       'bg-gray-100 text-gray-800'}
@@ -364,7 +378,6 @@ const EvidenceRequestsList = ({ limit = 5 }: EvidenceRequestsListProps) => {
         </DialogContent>
       </Dialog>
       
-      {/* Responses Dialog - Updated */}
       <Dialog open={responsesDialogOpen} onOpenChange={setResponsesDialogOpen}>
         <DialogContent className="sm:max-w-xl">
           <DialogHeader>

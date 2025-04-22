@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
 import { toast } from 'sonner';
@@ -29,7 +28,7 @@ export const uploadFilesToSupabase = async (
         .from('evidences')
         .upload(filePath, file, {
           cacheControl: '3600',
-          upsert: true, // Changed to true to overwrite if file exists
+          upsert: true,
           contentType: file.type
         });
       
@@ -78,7 +77,7 @@ export const uploadCriminalPhoto = async (
       .from('evidences')
       .upload(filePath, file, {
         cacheControl: '3600',
-        upsert: true, // Changed to true to overwrite if file exists
+        upsert: true,
         contentType: file.type
       });
     
@@ -116,7 +115,7 @@ export const uploadVoiceMessage = async (
       .from('evidences')
       .upload(filePath, audioBlob, {
         cacheControl: '3600',
-        upsert: true, // Changed to true to overwrite if file exists
+        upsert: true,
         contentType: 'audio/mp3'
       });
     
