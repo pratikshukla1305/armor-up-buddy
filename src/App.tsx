@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -47,7 +48,8 @@ import OfficerKyc from "./pages/OfficerKyc";
 import OfficerAdvisories from "./pages/OfficerAdvisories";
 import OfficerCaseMap from "./pages/OfficerCaseMap";
 import DiscussionForum from "./pages/DiscussionForum";
-import SelfReportForm from './components/SelfReportForm'; // Ensure this import exists
+import SelfReportForm from './components/SelfReportForm';
+import WantedIndividualsPage from './pages/WantedIndividualsPage';
 
 const App = () => {
   const [queryClient] = useState(() => new QueryClient());
@@ -83,6 +85,7 @@ const App = () => {
                 <Route path="/case-density-map" element={<CaseHeatmap />} />
                 <Route path="/police-station/:id" element={<PoliceStationDetail />} />
                 <Route path="/help-us" element={<HelpUsPage />} />
+                <Route path="/wanted-individuals" element={<WantedIndividualsPage />} />
                 <Route path="/submit-tip" element={<SubmitTipPage />} />
                 <Route path="/submit-evidence" element={<SubmitEvidence />} />
                 <Route path="/advisory" element={<AdvisoryPage />} />
@@ -135,7 +138,7 @@ const App = () => {
                 <Route path="/my-reports" element={<MyReports />} />
                 <Route path="/notifications" element={<Notifications />} />
                 <Route path="/forum" element={<DiscussionForum />} />
-                <Route path="/self-report" element={<SelfReportForm />} /> {/* Add this route */}
+                <Route path="/self-report" element={<SelfReportForm />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>

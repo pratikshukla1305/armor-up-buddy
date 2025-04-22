@@ -58,9 +58,9 @@ interface TipFormProps {
 }
 
 const TipForm = ({ onSubmitStart, onSubmitEnd }: TipFormProps) => {
-  const location = useLocation();
+  const locationHook = useLocation();
   const navigate = useNavigate();
-  const queryParams = new URLSearchParams(location.search);
+  const queryParams = new URLSearchParams(locationHook.search);
   const criminalId = queryParams.get('id');
   
   const [photoFile, setPhotoFile] = useState<File | null>(null);

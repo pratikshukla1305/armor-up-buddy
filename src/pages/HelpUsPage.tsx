@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { Helmet } from 'react-helmet';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CriminalListing from '@/components/helpus/CriminalListing';
@@ -9,6 +10,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 const HelpUsPage = () => {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
+      <Helmet>
+        <title>Help Us Find These Individuals | Shield</title>
+        <meta name="description" content="Report sightings of wanted individuals to help law enforcement keep our community safe." />
+      </Helmet>
+      
       <Navbar />
       
       <main className="flex-1 container max-w-7xl mx-auto px-4 py-24 sm:px-6 sm:py-32 lg:px-8">
