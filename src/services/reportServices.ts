@@ -61,6 +61,8 @@ export const submitReportToOfficer = async (reportId: string) => {
 // Get reports for officer
 export const getOfficerReports = async () => {
   try {
+    console.log("Fetching officer reports...");
+    
     // Modify the query to include all related data in a single query
     const { data, error } = await supabase
       .from('crime_reports')
@@ -73,7 +75,15 @@ export const getOfficerReports = async () => {
       .order('updated_at', { ascending: false });
     
     if (error) {
+      console.error("Supabase query error:", error);
       throw error;
+    }
+    
+    console.log("Reports fetched from Supabase:", data);
+    
+    if (!data || data.length === 0) {
+      console.log("No reports found in the database");
+      return [];
     }
     
     // Add mock evidence to reports that don't have any (for demo purposes)
@@ -99,7 +109,9 @@ export const getOfficerReports = async () => {
     return processedReports;
   } catch (error: any) {
     console.error('Error fetching officer reports:', error);
-    throw error;
+    toast.error(`Failed to load reports: ${error.message}`);
+    // Return empty array instead of throwing to prevent UI from breaking
+    return [];
   }
 };
 
