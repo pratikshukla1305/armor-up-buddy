@@ -52,6 +52,13 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
+				shield: {
+					dark: '#1A1F2C',
+					blue: '#4A6FA5',
+					gray: '#E5E7EB',
+					red: '#DC2626',
+					green: '#10B981'
+				},
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
 					foreground: 'hsl(var(--sidebar-foreground))',
@@ -84,11 +91,33 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'shield-pulse': {
+					'0%, 100%': { 
+						opacity: '1',
+						transform: 'scale(1)'
+					},
+					'50%': { 
+						opacity: '0.8',
+						transform: 'scale(1.05)'
+					}
+				},
+				'shield-activate': {
+					'0%': { 
+						opacity: '0',
+						transform: 'scale(0.8)'
+					},
+					'100%': { 
+						opacity: '1',
+						transform: 'scale(1)'
+					}
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'shield-pulse': 'shield-pulse 2s ease-in-out infinite',
+				'shield-activate': 'shield-activate 0.5s ease-out'
 			}
 		}
 	},
