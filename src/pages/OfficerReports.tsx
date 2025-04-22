@@ -1,9 +1,17 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import OfficerNavbar from '@/components/officer/OfficerNavbar';
 import ReportsList from '@/components/officer/ReportsList';
+import { Button } from '@/components/ui/button';
+import { RefreshCw } from 'lucide-react';
 
 const OfficerReports = () => {
+  const [refreshKey, setRefreshKey] = useState(0);
+  
+  const handleRefresh = () => {
+    setRefreshKey(prev => prev + 1);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <OfficerNavbar />
@@ -14,9 +22,18 @@ const OfficerReports = () => {
             <h1 className="text-2xl font-bold text-gray-900">Reports Management</h1>
             <p className="text-gray-600">Review and manage user submitted reports and evidence</p>
           </div>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleRefresh}
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className="h-4 w-4" />
+            Refresh
+          </Button>
         </div>
         
-        <ReportsList />
+        <ReportsList key={refreshKey} />
       </div>
     </div>
   );

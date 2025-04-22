@@ -60,9 +60,14 @@ export const submitReportToOfficer = async (reportId: string) => {
 // Get reports for officer
 export const getOfficerReports = async () => {
   try {
+    // Modify the query to include all related data in a single query
     const { data, error } = await supabase
       .from('crime_reports')
-      .select('*, evidence(*), report_pdfs(*)')
+      .select(`
+        *,
+        evidence(*),
+        report_pdfs(*)
+      `)
       .in('status', ['submitted', 'processing', 'completed'])
       .order('updated_at', { ascending: false });
     
