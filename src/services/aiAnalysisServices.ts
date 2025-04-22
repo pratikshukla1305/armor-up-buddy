@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -29,7 +28,17 @@ export const analyzeVideoEvidence = async (
   error?: string 
 }> => {
   try {
-    console.log("Analyzing video evidence:", videoUrl);
+    // Get current geolocation
+    const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject(new Error('Geolocation is not supported by this browser'));
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(resolve, reject);
+    });
+
+    const locationString = `${position.coords.latitude}, ${position.coords.longitude}`;
+    console.log("Detected location:", locationString);
     
     // Create a FormData object with the video URL
     const formData = new FormData();
@@ -63,14 +72,15 @@ export const analyzeVideoEvidence = async (
     // Higher confidence values (85-95% range)
     const confidence = 0.85 + (Math.random() * 0.10);
     
-    // Store the analysis result in the database - use crime_report_analysis table
+    // Store the analysis result in the database with detected location
     await supabase
       .from('crime_report_analysis')
       .insert({
         report_id: reportId,
         crime_type: data.crime_type.toLowerCase(),
         description: CRIME_DESCRIPTION,
-        confidence: confidence // Higher confidence value between 85-95%
+        confidence: confidence,
+        location: locationString // Use detected location
       });
     
     // Return the analysis result
@@ -85,6 +95,10 @@ export const analyzeVideoEvidence = async (
   } catch (error: any) {
     console.error("Error analyzing video evidence:", error);
     
+    if (error.message.includes('Geolocation')) {
+      toast.error("Unable to detect location. Please enable location services.");
+    }
+    
     // Randomly select either "abuse" or "assault" as fallback
     const fallbackCrimeTypes = ['abuse', 'assault'];
     const fallbackType = fallbackCrimeTypes[Math.floor(Math.random() * fallbackCrimeTypes.length)];
@@ -98,7 +112,7 @@ export const analyzeVideoEvidence = async (
       analysisTimestamp: new Date().toISOString()
     };
     
-    // Store the fallback analysis in the database - use crime_report_analysis table
+    // Store the fallback analysis in the database
     try {
       await supabase
         .from('crime_report_analysis')
@@ -106,7 +120,8 @@ export const analyzeVideoEvidence = async (
           report_id: reportId,
           crime_type: fallbackType,
           description: CRIME_DESCRIPTION,
-          confidence: fallbackConfidence // Higher confidence for fallback
+          confidence: fallbackConfidence,
+          location: 'Location unavailable' // Fallback location text
         });
     } catch (dbError) {
       console.error("Error storing fallback analysis:", dbError);
