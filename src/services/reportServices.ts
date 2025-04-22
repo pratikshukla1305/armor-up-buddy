@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { addMockEvidenceToReports } from './mockEvidenceService';
@@ -63,8 +62,11 @@ export const getOfficerReports = async () => {
   try {
     console.log("Fetching officer reports...");
     
+    // Ensure fallback to demo data if needed
+    let reports = [];
+    
     // First, fetch reports
-    const { data: reports, error: reportsError } = await supabase
+    const { data: fetchedReports, error: reportsError } = await supabase
       .from('crime_reports')
       .select('*')
       .in('status', ['submitted', 'processing', 'completed'])
@@ -72,44 +74,99 @@ export const getOfficerReports = async () => {
     
     if (reportsError) {
       console.error("Error fetching reports:", reportsError);
-      throw reportsError;
+      toast.error("Error loading reports. Using sample data instead.");
+    } else {
+      console.log("Raw reports data:", fetchedReports);
+      reports = fetchedReports || [];
     }
     
-    console.log("Raw reports data:", reports);
-    
-    if (!reports || reports.length === 0) {
-      console.log("No reports found with matching status");
-      return [];
+    if (reports.length === 0) {
+      console.log("No reports found with matching status, using mock data");
+      // Create a mock report for demo purposes
+      const mockReport = {
+        id: "mock-report-id-123",
+        title: "Mock Traffic Violation Report",
+        description: "This is a mock report for demonstration purposes. It shows a vehicle running a red light at an intersection.",
+        location: "Main Street & 5th Avenue",
+        detailed_location: "Northeast corner of the intersection near the grocery store",
+        status: "submitted",
+        report_date: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        user_id: "mock-user-123",
+        evidence: [
+          {
+            id: "mock-evidence-1",
+            report_id: "mock-report-id-123",
+            title: "Dashcam Footage",
+            description: "Dashcam video showing the incident from my vehicle",
+            type: "video",
+            storage_path: "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+            uploaded_at: new Date().toISOString()
+          },
+          {
+            id: "mock-evidence-2",
+            report_id: "mock-report-id-123",
+            title: "Location Photo",
+            description: "Photo of the intersection where the incident occurred",
+            type: "image",
+            storage_path: "https://images.unsplash.com/photo-1523464862212-d6631d073194",
+            uploaded_at: new Date().toISOString()
+          }
+        ],
+        report_pdfs: [
+          {
+            id: "mock-pdf-1",
+            report_id: "mock-report-id-123",
+            file_name: "incident_report.pdf",
+            file_url: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
+            is_official: true,
+            created_at: new Date().toISOString()
+          }
+        ]
+      };
+      
+      reports = [mockReport];
+      return reports;
     }
     
     // Fetch all evidence for these reports in a single query
     const reportIds = reports.map(report => report.id);
-    const { data: allEvidence, error: evidenceError } = await supabase
+    let allEvidence = [];
+    
+    const { data: fetchedEvidence, error: evidenceError } = await supabase
       .from('evidence')
       .select('*')
       .in('report_id', reportIds);
     
     if (evidenceError) {
       console.error("Error fetching evidence:", evidenceError);
-      // Continue with reports but without evidence
+      toast.error("Error loading evidence for reports.");
+    } else {
+      allEvidence = fetchedEvidence || [];
+      console.log("Fetched evidence:", allEvidence);
     }
     
     // Fetch all PDFs for these reports in a single query
-    const { data: allPdfs, error: pdfsError } = await supabase
+    let allPdfs = [];
+    
+    const { data: fetchedPdfs, error: pdfsError } = await supabase
       .from('report_pdfs')
       .select('*')
       .in('report_id', reportIds);
     
     if (pdfsError) {
       console.error("Error fetching PDFs:", pdfsError);
-      // Continue with reports but without PDFs
+      toast.error("Error loading PDFs for reports.");
+    } else {
+      allPdfs = fetchedPdfs || [];
+      console.log("Fetched PDFs:", allPdfs);
     }
     
     // Organize evidence and PDFs by report_id
     const evidenceByReportId: Record<string, any[]> = {};
     const pdfsByReportId: Record<string, any[]> = {};
     
-    if (allEvidence && allEvidence.length > 0) {
+    if (allEvidence.length > 0) {
       allEvidence.forEach(item => {
         if (!evidenceByReportId[item.report_id]) {
           evidenceByReportId[item.report_id] = [];
@@ -118,7 +175,7 @@ export const getOfficerReports = async () => {
       });
     }
     
-    if (allPdfs && allPdfs.length > 0) {
+    if (allPdfs.length > 0) {
       allPdfs.forEach(item => {
         if (!pdfsByReportId[item.report_id]) {
           pdfsByReportId[item.report_id] = [];
@@ -142,7 +199,10 @@ export const getOfficerReports = async () => {
     return reportsWithEvidence;
   } catch (error: any) {
     console.error('Error fetching officer reports:', error);
-    throw error;
+    toast.error("Failed to load reports. Using sample data instead.");
+    
+    // Return mock data in case of error
+    return addMockEvidenceToReports([]);
   }
 };
 
