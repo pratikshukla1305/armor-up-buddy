@@ -101,7 +101,6 @@ const GenerateDetailedReport = () => {
       fetchExistingAnalysis(id);
     }
     
-    // Automatically detect location when component mounts
     detectCurrentLocation();
   }, [location.search]);
   
@@ -160,7 +159,6 @@ const GenerateDetailedReport = () => {
           console.error("Error getting location:", error);
           toast.error("Could not detect location. Please enter manually.");
           
-          // Set a default location if detection fails
           locationForm.setValue('location', "Unknown location - please update manually");
           setIsDetectingLocation(false);
         },
@@ -876,4 +874,91 @@ const GenerateDetailedReport = () => {
                   <h3 className="text-lg font-medium text-green-700">Report Generated Successfully!</h3>
                 </div>
                 
-                <div className="flex flex-col sm:flex
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <Button 
+                    variant="outline" 
+                    className="flex-1"
+                    onClick={handleDownload}
+                  >
+                    <Download className="mr-2 h-4 w-4" /> Download Report
+                  </Button>
+                  
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        className="flex-1"
+                      >
+                        <Share2 className="mr-2 h-4 w-4" /> Share Report
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-56">
+                      <div className="grid gap-2">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="justify-start"
+                          onClick={() => handleShare('whatsapp')}
+                        >
+                          <MessageCircle className="mr-2 h-4 w-4" /> WhatsApp
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="justify-start"
+                          onClick={() => handleShare('telegram')}
+                        >
+                          <MessageCircle className="mr-2 h-4 w-4" /> Telegram
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="justify-start"
+                          onClick={() => handleShare('email')}
+                        >
+                          <Mail className="mr-2 h-4 w-4" /> Email
+                        </Button>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                  
+                  <Button 
+                    className="bg-shield-blue text-white hover:bg-blue-600 transition-all flex-1"
+                    onClick={handleSendToOfficer}
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <RotateCcw className="mr-2 h-4 w-4 animate-spin" /> Submitting...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="mr-2 h-4 w-4" /> Send to Officer
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+      
+      {isSharingEmail && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg max-w-md w-full">
+            <div className="flex justify-between items-center p-4 border-b">
+              <h3 className="font-medium">Share via Email</h3>
+              <Button variant="ghost" size="sm" onClick={() => setIsSharingEmail(false)}>X</Button>
+            </div>
+            {renderEmailShareForm()}
+          </div>
+        </div>
+      )}
+      
+      <Footer />
+    </div>
+  );
+};
+
+export default GenerateDetailedReport;
