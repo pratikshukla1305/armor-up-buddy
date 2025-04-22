@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import KycVerificationList from '@/components/officer/KycVerificationList';
-import SosAlertList from '@/components/officer/SosAlertList';
+import SOSAlertsList from '@/components/officer/SOSAlertsList';
 import OfficerCriminalPanel from '@/components/officer/OfficerCriminalPanel';
 import { useOfficerAuth } from '@/contexts/OfficerAuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -17,7 +17,6 @@ const OfficerDashboard = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
 
-  // Redirect to login if not authenticated
   React.useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       navigate('/officer-login');
@@ -32,7 +31,6 @@ const OfficerDashboard = () => {
     );
   }
 
-  // Dashboard overview components
   const OverviewCards = () => (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       <Card>
@@ -135,7 +133,6 @@ const OfficerDashboard = () => {
             <TabsTrigger value="evidence">Evidence</TabsTrigger>
           </TabsList>
           
-          {/* Tab Content for Overview */}
           <TabsContent value="overview">
             <div className="space-y-8">
               <OverviewCards />
@@ -144,7 +141,6 @@ const OfficerDashboard = () => {
             </div>
           </TabsContent>
           
-          {/* Tab Content for KYC Verification */}
           <TabsContent value="requests">
             <div className="space-y-8">
               <Card>
@@ -167,13 +163,12 @@ const OfficerDashboard = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <SosAlertList />
+                  <SOSAlertsList />
                 </CardContent>
               </Card>
             </div>
           </TabsContent>
           
-          {/* Tab Content for Criminal Database */}
           <TabsContent value="criminals">
             <Card>
               <CardHeader>
@@ -188,7 +183,6 @@ const OfficerDashboard = () => {
             </Card>
           </TabsContent>
           
-          {/* Tab Content for Evidence */}
           <TabsContent value="evidence">
             <Card>
               <CardHeader>
