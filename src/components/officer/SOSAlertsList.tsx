@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { getSosAlerts, updateSosAlertStatus } from '@/services/officerServices';
@@ -89,10 +90,8 @@ const SOSAlertsList: React.FC<SOSAlertsListProps> = ({ limit }) => {
           
           if (payload.eventType === 'INSERT') {
             // Show notification for new voice recordings
-            toast({
-              title: "New Voice Recording",
+            toast("New Voice Recording", {
               description: "A voice recording has been added to an SOS alert",
-              variant: "default",
             });
           }
           
@@ -121,10 +120,8 @@ const SOSAlertsList: React.FC<SOSAlertsListProps> = ({ limit }) => {
           
           if (payload.eventType === 'INSERT') {
             // Show notification for new tips
-            toast({
-              title: "New Criminal Sighting Report",
+            toast("New Criminal Sighting Report", {
               description: "A new criminal sighting has been reported",
-              variant: "default",
             });
           }
         }
