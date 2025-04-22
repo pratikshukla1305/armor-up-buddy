@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -100,6 +101,9 @@ const GenerateDetailedReport = () => {
     if (id) {
       fetchExistingAnalysis(id);
     }
+    
+    // Automatically detect location when component mounts
+    detectCurrentLocation();
   }, [location.search]);
   
   const fetchExistingAnalysis = async (reportId: string) => {
@@ -142,21 +146,35 @@ const GenerateDetailedReport = () => {
   
   const detectCurrentLocation = () => {
     setIsDetectingLocation(true);
+    console.log("Starting location detection...");
+    
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          const location = `${position.coords.latitude}, ${position.coords.longitude}`;
-          locationForm.setValue('location', location);
+          console.log("Location detected:", position.coords);
+          const detectedLocation = `${position.coords.latitude}, ${position.coords.longitude}`;
+          locationForm.setValue('location', detectedLocation);
+          toast.success("Current location detected successfully");
           setIsDetectingLocation(false);
         },
         (error) => {
           console.error("Error getting location:", error);
           toast.error("Could not detect location. Please enter manually.");
+          
+          // Set a default location if detection fails
+          locationForm.setValue('location', "Unknown location - please update manually");
           setIsDetectingLocation(false);
+        },
+        { 
+          enableHighAccuracy: true, 
+          timeout: 10000,
+          maximumAge: 0
         }
       );
     } else {
+      console.error("Geolocation not supported");
       toast.error("Location detection not supported by your browser. Please enter manually.");
+      locationForm.setValue('location', "Unknown location - please update manually");
       setIsDetectingLocation(false);
     }
   };
@@ -808,7 +826,27 @@ const GenerateDetailedReport = () => {
                       )}
                     />
                     
-                    <div className="text-center pt-4">
+                    <div className="flex justify-between pt-4">
+                      <Button 
+                        type="button"
+                        variant="outline"
+                        onClick={detectCurrentLocation}
+                        disabled={isDetectingLocation}
+                        className="text-shield-blue border-shield-blue"
+                      >
+                        {isDetectingLocation ? (
+                          <>
+                            <RotateCcw className="mr-2 h-4 w-4 animate-spin" />
+                            Detecting...
+                          </>
+                        ) : (
+                          <>
+                            <MapPin className="mr-2 h-4 w-4" />
+                            Detect Location Again
+                          </>
+                        )}
+                      </Button>
+                      
                       <Button 
                         type="submit"
                         className="bg-shield-blue text-white hover:bg-blue-600 transition-all"
