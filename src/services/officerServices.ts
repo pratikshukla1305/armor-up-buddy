@@ -7,7 +7,6 @@ import {
   SOSAlert, 
   CaseData 
 } from '@/types/officer';
-import { v4 as uuidv4 } from 'uuid';
 
 // KYC Verifications
 export const getKycVerifications = async (): Promise<KycVerification[]> => {
@@ -43,21 +42,14 @@ export const updateKycVerificationStatus = async (
   try {
     console.log(`Updating KYC status: id=${id}, status=${status}, reason=${officerAction}`);
     
-    // Create the update data
-    const updateData: any = {
-      status: status,
-      officer_action: officerAction,
-    };
-    
-    // Add rejection reason if status is Rejected
-    if (status === 'Rejected') {
-      updateData.rejection_reason = officerAction;
-    }
-    
     // Update the verification status
     const { error } = await supabase
       .from('kyc_verifications')
-      .update(updateData)
+      .update({
+        status: status,
+        officer_action: officerAction,
+        rejection_reason: status === 'Rejected' ? officerAction : null
+      })
       .eq('id', id);
       
     if (error) {
@@ -291,6 +283,8 @@ export const createCase = async (caseData: Partial<CaseData>): Promise<CaseData[
   }
 };
 
+// Additional functions needed by components
+
 // Add a new function to fetch evidence for viewing
 export const getEvidenceById = async (evidenceId: string): Promise<any> => {
   try {
@@ -349,102 +343,5 @@ export const registerOfficer = async (officerData: {
   } catch (error) {
     console.error('Error registering officer:', error);
     throw error;
-  }
-};
-
-// Add the missing functions needed for UploadCard.tsx
-export const uploadFilesToSupabase = async (files: File[], userId: string): Promise<string[]> => {
-  try {
-    const uploadedUrls: string[] = [];
-    
-    // Create a unique folder for this upload session
-    const sessionId = uuidv4();
-    const bucketName = 'crime-evidence';
-    
-    // Check if storage is available
-    const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
-    
-    if (bucketsError) {
-      console.error('Error checking storage buckets:', bucketsError);
-      throw new Error('Storage not available');
-    }
-    
-    // Create or use the evidence bucket
-    const bucketExists = buckets.some(bucket => bucket.name === bucketName);
-    
-    if (!bucketExists) {
-      const { error: createError } = await supabase.storage.createBucket(bucketName, {
-        public: true, // For demonstration purposes
-      });
-      
-      if (createError) {
-        console.error('Error creating bucket:', createError);
-        throw new Error('Failed to create storage bucket');
-      }
-    }
-    
-    // Upload each file
-    for (const file of files) {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${uuidv4()}.${fileExt}`;
-      const filePath = `uploads/${userId}/${sessionId}/${fileName}`;
-      
-      // Upload file
-      const { error: uploadError } = await supabase.storage
-        .from(bucketName)
-        .upload(filePath, file);
-      
-      if (uploadError) {
-        console.error('Error uploading file:', uploadError);
-        continue; // Skip this file and try the next one
-      }
-      
-      // Get public URL
-      const { data: urlData } = supabase.storage
-        .from(bucketName)
-        .getPublicUrl(filePath);
-      
-      if (urlData.publicUrl) {
-        uploadedUrls.push(urlData.publicUrl);
-      }
-    }
-    
-    return uploadedUrls;
-  } catch (error) {
-    console.error('Error in uploadFilesToSupabase:', error);
-    return [];
-  }
-};
-
-export const createDraftReport = async (
-  userId: string, 
-  reportId: string, 
-  uploadedUrls: string[]
-): Promise<boolean> => {
-  try {
-    // Create a draft report entry in the database
-    const { error } = await supabase
-      .from('crime_reports')
-      .insert([
-        {
-          id: reportId,
-          user_id: userId,
-          title: 'Draft Report',
-          status: 'draft',
-          description: 'Automatically created draft report for uploaded evidence.',
-          media_urls: uploadedUrls,
-          created_at: new Date().toISOString()
-        }
-      ]);
-    
-    if (error) {
-      console.error('Error creating draft report:', error);
-      return false;
-    }
-    
-    return true;
-  } catch (error) {
-    console.error('Error in createDraftReport:', error);
-    return false;
   }
 };

@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -112,7 +113,7 @@ export const uploadEvidenceFile = async (
       throw uploadError;
     }
     
-    // Fix: properly await and access the signed URL result
+    // Get URL (not public) - Fix the type error by properly awaiting and accessing data
     const urlResult = await supabase.storage
       .from(bucketName)
       .createSignedUrl(filePath, 60 * 60 * 24 * 7); // 7 days
