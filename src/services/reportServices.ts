@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { addMockEvidenceToReports } from './mockEvidenceService';
@@ -68,7 +69,7 @@ export const getOfficerReports = async () => {
         evidence(*),
         report_pdfs(*)
       `)
-      .in('status', ['submitted', 'processing', 'completed'])
+      .in('status', ['submitted', 'processing', 'completed', 'rejected'])
       .order('updated_at', { ascending: false });
     
     if (error) {
@@ -90,8 +91,15 @@ export const getOfficerReports = async () => {
 // Update report status by officer
 export const updateReportStatus = async (reportId: string, status: string, officerNotes?: string) => {
   try {
+    // Validate status to ensure it matches the allowed values in the database
+    const validStatuses = ['submitted', 'processing', 'completed', 'rejected'];
+    
+    if (!validStatuses.includes(status.toLowerCase())) {
+      throw new Error(`Invalid status: ${status}. Must be one of: ${validStatuses.join(', ')}`);
+    }
+    
     const updateData: any = {
-      status,
+      status: status.toLowerCase(), // Ensure lowercase to match DB constraint
       updated_at: new Date().toISOString()
     };
     
@@ -99,37 +107,54 @@ export const updateReportStatus = async (reportId: string, status: string, offic
       updateData.officer_notes = officerNotes;
     }
     
-    const { data, error } = await supabase
+    // Get current report status before update
+    const { data: currentReport, error: fetchError } = await supabase
       .from('crime_reports')
-      .update(updateData)
-      .eq('id', reportId)
-      .select();
-    
-    if (error) {
-      throw error;
-    }
-
-    // Get the user ID for this report to send notification
-    const { data: reportData, error: reportError } = await supabase
-      .from('crime_reports')
-      .select('user_id')
+      .select('status, user_id')
       .eq('id', reportId)
       .single();
-    
-    if (!reportError && reportData) {
-      // Create user notification
-      await supabase
-        .from('user_notifications')
-        .insert({
-          user_id: reportData.user_id,
-          report_id: reportId,
-          notification_type: 'officer_action',
-          is_read: false,
-          message: `An officer has updated your report status to: ${status}`
-        });
+      
+    if (fetchError) {
+      throw fetchError;
     }
     
-    return data;
+    // Only perform update if status is different
+    if (currentReport && currentReport.status !== status.toLowerCase()) {
+      const { data, error } = await supabase
+        .from('crime_reports')
+        .update(updateData)
+        .eq('id', reportId)
+        .select();
+      
+      if (error) {
+        console.error('Detailed error:', error);
+        throw error;
+      }
+
+      // Create user notification if user_id exists
+      if (currentReport.user_id) {
+        try {
+          // Create user notification
+          await supabase
+            .from('user_notifications')
+            .insert({
+              user_id: currentReport.user_id,
+              report_id: reportId,
+              notification_type: 'officer_action',
+              is_read: false,
+              message: `An officer has updated your report status to: ${status.toLowerCase()}`
+            });
+        } catch (notificationError) {
+          console.error('Error creating user notification:', notificationError);
+          // Don't throw here to avoid blocking the main operation
+        }
+      }
+      
+      return data;
+    } else {
+      // No change in status, just return the current report
+      return [currentReport];
+    }
   } catch (error: any) {
     console.error('Error updating report status:', error);
     toast.error(`Failed to update status: ${error.message}`);

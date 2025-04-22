@@ -206,18 +206,30 @@ const ReportsList = ({ limit }: ReportListProps) => {
     setIsSubmitting(true);
 
     try {
-      const result = await updateReportStatus(selectedReport.id, newStatus, officerNotes);
+      const formattedStatus = newStatus.toLowerCase();
+      
+      const result = await updateReportStatus(selectedReport.id, formattedStatus, officerNotes);
 
       if (result) {
-        toast.success(`Report status updated to ${newStatus}`);
+        toast.success(`Report status updated to ${formattedStatus}`);
         setStatusDialogOpen(false);
         fetchReports();
       } else {
         throw new Error('Failed to update status');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating status:", error);
-      toast.error("Failed to update report status");
+      
+      let errorMessage = "Failed to update report status";
+      if (error.message) {
+        if (error.message.includes("violates check constraint")) {
+          errorMessage = "Invalid status value. Please use one of: submitted, processing, completed, rejected";
+        } else {
+          errorMessage = `Error: ${error.message}`;
+        }
+      }
+      
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
