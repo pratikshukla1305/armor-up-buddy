@@ -65,6 +65,7 @@ const GenerateDetailedReport = () => {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [isSharingEmail, setIsSharingEmail] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
+  const [isDetectingLocation, setIsDetectingLocation] = useState(false);
   
   const locationForm = useForm<z.infer<typeof locationFormSchema>>({
     resolver: zodResolver(locationFormSchema),
@@ -137,6 +138,27 @@ const GenerateDetailedReport = () => {
     }, 200);
     
     return () => clearInterval(interval);
+  };
+  
+  const detectCurrentLocation = () => {
+    setIsDetectingLocation(true);
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const location = `${position.coords.latitude}, ${position.coords.longitude}`;
+          locationForm.setValue('location', location);
+          setIsDetectingLocation(false);
+        },
+        (error) => {
+          console.error("Error getting location:", error);
+          toast.error("Could not detect location. Please enter manually.");
+          setIsDetectingLocation(false);
+        }
+      );
+    } else {
+      toast.error("Location detection not supported by your browser. Please enter manually.");
+      setIsDetectingLocation(false);
+    }
   };
   
   const handleGenerate = async (formData: z.infer<typeof locationFormSchema>) => {
@@ -508,7 +530,7 @@ const GenerateDetailedReport = () => {
              url.toLowerCase().includes('video') ? (
               <>
                 <div className="w-full h-full bg-gray-200 flex items-center justify-center cursor-pointer"
-                     onClick={() => setSelectedVideo(url)}>
+                     onClick={() => setSelectedVideo(url)} >
                   <div className="flex flex-col items-center">
                     <Video className="h-16 w-16 text-gray-500" />
                     <span className="mt-2 text-sm text-gray-600">Click to play video</span>
@@ -749,7 +771,7 @@ const GenerateDetailedReport = () => {
                 <h3 className="text-lg font-medium mb-4">
                   <div className="flex items-center">
                     <MapPin className="mr-2 h-5 w-5 text-shield-blue" />
-                    Specify Incident Location
+                    {isDetectingLocation ? 'Detecting Location...' : 'Incident Location'}
                   </div>
                 </h3>
                 
@@ -762,14 +784,24 @@ const GenerateDetailedReport = () => {
                         <FormItem>
                           <FormLabel>Location Details</FormLabel>
                           <FormControl>
-                            <Input 
-                              placeholder="Enter detailed location (e.g., 123 Main St, Boston, MA 02108)" 
-                              {...field} 
-                              className="w-full"
-                            />
+                            <div className="relative">
+                              <Input 
+                                placeholder={isDetectingLocation ? "Detecting location..." : "Enter location manually if detection fails"}
+                                {...field} 
+                                className="w-full"
+                                disabled={isDetectingLocation}
+                              />
+                              {isDetectingLocation && (
+                                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                  <RotateCcw className="h-4 w-4 animate-spin text-gray-400" />
+                                </div>
+                              )}
+                            </div>
                           </FormControl>
                           <FormDescription>
-                            Please provide the most detailed location information possible
+                            {isDetectingLocation ? 
+                              "Detecting your current location..." : 
+                              "Location detected automatically. You can modify it if needed."}
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
