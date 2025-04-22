@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -882,4 +883,96 @@ const GenerateDetailedReport = () => {
             ) : (
               <div className="text-center">
                 <div className="mb-6">
-                  <div className="inline-flex items-center justify-center w-12 h-12 rounded
+                  <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-green-100 text-green-600">
+                    <Check className="h-6 w-6" />
+                  </div>
+                  <h3 className="text-lg font-medium mt-2">Report Generated Successfully</h3>
+                </div>
+                
+                <div className="flex flex-wrap justify-center gap-3 mb-8">
+                  <Button 
+                    onClick={handleDownload}
+                    className="bg-shield-blue text-white hover:bg-blue-600"
+                  >
+                    <Download className="mr-2 h-4 w-4" /> Download PDF
+                  </Button>
+                  
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline">
+                        <Share2 className="mr-2 h-4 w-4" /> Share Report
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-56 p-2">
+                      <div className="grid gap-2">
+                        <Button 
+                          variant="ghost" 
+                          className="w-full justify-start"
+                          onClick={() => handleShare('whatsapp')}
+                        >
+                          <MessageCircle className="mr-2 h-4 w-4" /> WhatsApp
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          className="w-full justify-start"
+                          onClick={() => handleShare('telegram')}
+                        >
+                          <Send className="mr-2 h-4 w-4" /> Telegram
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          className="w-full justify-start"
+                          onClick={() => handleShare('email')}
+                        >
+                          <Mail className="mr-2 h-4 w-4" /> Email
+                        </Button>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                  
+                  <Button 
+                    onClick={handleSendToOfficer}
+                    className="bg-green-600 text-white hover:bg-green-700"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <RotateCcw className="mr-2 h-4 w-4 animate-spin" /> Submitting...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="mr-2 h-4 w-4" /> Submit to Officer
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+      
+      {isSharingEmail && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg max-w-md w-full">
+            <div className="flex justify-between items-center border-b p-4">
+              <h3 className="text-lg font-medium">Share via Email</h3>
+              <Button 
+                variant="ghost" 
+                onClick={() => setIsSharingEmail(false)}
+                className="h-8 w-8 p-0"
+              >
+                X
+              </Button>
+            </div>
+            {renderEmailShareForm()}
+          </div>
+        </div>
+      )}
+      
+      <Footer />
+    </div>
+  );
+};
+
+export default GenerateDetailedReport;
