@@ -116,14 +116,3 @@ export interface CriminalTip {
   image_url?: string;
   officer_action?: string;
 }
-
-export interface Evidence {
-  id: string;
-  report_id: string;
-  user_id: string;
-  title?: string;
-  description?: string;
-  type?: string;
-  storage_path?: string;
-  uploaded_at: string;
-}
