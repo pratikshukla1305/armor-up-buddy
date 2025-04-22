@@ -1,38 +1,32 @@
 
 import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Eye, Download, File, FileText, Film, Image, AlertCircle, Loader2 } from 'lucide-react';
 import { getAllEvidence, getEvidenceById } from '@/services/officerServices';
-import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { FileText, FileImage, FileVideo, File, Search, X, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useOfficerAuth } from '@/contexts/OfficerAuthContext';
+import { Evidence } from '@/types/officer';
 
-interface EvidenceViewerProps {
-  limit?: number;
-}
-
-const EvidenceViewer = ({ limit }: EvidenceViewerProps) => {
-  const [evidence, setEvidence] = useState<any[]>([]);
-  const [selectedEvidence, setSelectedEvidence] = useState<any | null>(null);
+const EvidenceViewer = () => {
+  const [evidence, setEvidence] = useState<Evidence[]>([]);
+  const [selectedEvidence, setSelectedEvidence] = useState<Evidence | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const { officer } = useOfficerAuth();
+  const [activeTab, setActiveTab] = useState('all');
 
   const fetchEvidence = async () => {
-    setIsLoading(true);
     try {
+      setIsLoading(true);
       const data = await getAllEvidence();
       console.log("Fetched evidence:", data);
-      const limitedData = limit ? data.slice(0, limit) : data;
-      setEvidence(limitedData);
+      setEvidence(data);
     } catch (error: any) {
       console.error("Error fetching evidence:", error);
-      toast.error("Failed to load evidence", {
-        description: error.message
+      toast.error("Failed to fetch evidence data", {
+        description: error.message,
       });
     } finally {
       setIsLoading(false);
@@ -41,247 +35,189 @@ const EvidenceViewer = ({ limit }: EvidenceViewerProps) => {
 
   useEffect(() => {
     fetchEvidence();
-  }, [limit]);
+  }, []);
 
-  const handleViewEvidence = async (id: string) => {
-    try {
-      const data = await getEvidenceById(id);
-      console.log("Selected evidence:", data);
-      setSelectedEvidence(data);
-      setIsDialogOpen(true);
-      
-      // Record this evidence view
-      if (officer) {
-        await supabase.from('evidence_views').insert({
-          evidence_id: id,
-          officer_id: officer.id.toString(),
-          view_complete: false
-        });
-      }
-    } catch (error: any) {
-      console.error("Error viewing evidence:", error);
-      toast.error("Failed to load evidence details", {
-        description: error.message
-      });
-    }
+  const getEvidenceTypeIcon = (type: string = '') => {
+    const lowerType = type.toLowerCase();
+    if (lowerType.includes('image')) return <FileImage className="h-6 w-6 text-blue-500" />;
+    if (lowerType.includes('video')) return <FileVideo className="h-6 w-6 text-purple-500" />;
+    if (lowerType.includes('document') || lowerType.includes('pdf')) 
+      return <FileText className="h-6 w-6 text-red-500" />;
+    return <File className="h-6 w-6 text-gray-500" />;
   };
 
-  const handleDialogClose = async () => {
-    if (selectedEvidence && officer) {
-      // Update the view as complete
-      try {
-        await supabase
-          .from('evidence_views')
-          .update({ view_complete: true })
-          .eq('evidence_id', selectedEvidence.id)
-          .eq('officer_id', officer.id.toString());
-      } catch (error) {
-        console.error("Error updating evidence view:", error);
-      }
-    }
-    setIsDialogOpen(false);
+  const filteredEvidence = evidence.filter(item => {
+    const matchesSearch = 
+      (item.title?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+      (item.description?.toLowerCase() || '').includes(searchTerm.toLowerCase());
+
+    if (activeTab === 'all') return matchesSearch;
+    return item.type?.toLowerCase().includes(activeTab) && matchesSearch;
+  });
+
+  const handleViewEvidence = (item: Evidence) => {
+    setSelectedEvidence(item);
   };
 
-  const getEvidenceTypeIcon = (type?: string) => {
-    switch (type?.toLowerCase()) {
-      case 'image':
-        return <Image className="h-5 w-5" />;
-      case 'video':
-        return <Film className="h-5 w-5" />;
-      case 'document':
-        return <FileText className="h-5 w-5" />;
-      default:
-        return <File className="h-5 w-5" />;
-    }
+  const handleClearSelection = () => {
+    setSelectedEvidence(null);
   };
-
-  const renderEvidenceContent = () => {
-    if (!selectedEvidence) return null;
-    
-    const type = selectedEvidence.type?.toLowerCase();
-    const url = selectedEvidence.storage_path;
-    
-    if (!url) {
-      return (
-        <div className="text-center py-8">
-          <AlertCircle className="mx-auto h-10 w-10 text-yellow-500 mb-2" />
-          <p>Evidence file not available</p>
-        </div>
-      );
-    }
-    
-    switch (type) {
-      case 'image':
-        return <img src={url} alt="Evidence" className="max-w-full h-auto rounded-md" />;
-      case 'video':
-        return (
-          <video controls className="w-full rounded-md">
-            <source src={url} />
-            Your browser does not support the video tag.
-          </video>
-        );
-      case 'document':
-        return (
-          <div className="text-center py-8">
-            <FileText className="mx-auto h-10 w-10 text-blue-500 mb-2" />
-            <p>Document available for download</p>
-            <Button className="mt-4" onClick={() => window.open(url, '_blank')}>
-              <Download className="mr-2 h-4 w-4" /> Download Document
-            </Button>
-          </div>
-        );
-      default:
-        return (
-          <div className="text-center py-8">
-            <File className="mx-auto h-10 w-10 text-gray-500 mb-2" />
-            <p>File available for download</p>
-            <Button className="mt-4" onClick={() => window.open(url, '_blank')}>
-              <Download className="mr-2 h-4 w-4" /> Download File
-            </Button>
-          </div>
-        );
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-shield-blue" />
-        <span className="ml-2">Loading evidence...</span>
-      </div>
-    );
-  }
-
-  if (evidence.length === 0) {
-    return (
-      <div className="text-center py-12 bg-gray-50 rounded-lg border">
-        <File className="mx-auto h-12 w-12 text-gray-300 mb-3" />
-        <h3 className="text-lg font-medium text-gray-900">No Evidence Available</h3>
-        <p className="text-gray-500 mt-2">No evidence has been submitted yet.</p>
-      </div>
-    );
-  }
 
   return (
-    <div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {evidence.map((item) => (
-          <Card key={item.id} className="overflow-hidden">
-            <CardHeader className="pb-2">
-              <div className="flex justify-between items-start">
-                <CardTitle className="text-base">{item.title || 'Untitled Evidence'}</CardTitle>
-                <Badge variant={item.report?.status === 'approved' ? 'default' : 'outline'}>
-                  {item.report?.status || 'Processing'}
-                </Badge>
-              </div>
-              <CardDescription className="truncate">
-                {item.description || 'No description available'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="pb-2">
-              <div className="flex items-center gap-2 mb-2">
-                {getEvidenceTypeIcon(item.type)}
-                <span className="text-sm capitalize">{item.type || 'Unknown'} File</span>
-              </div>
-              <p className="text-xs text-gray-500">
-                Uploaded: {new Date(item.uploaded_at).toLocaleString()}
-              </p>
-            </CardContent>
-            <CardFooter>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="w-full flex items-center justify-center"
-                onClick={() => handleViewEvidence(item.id)}
-              >
-                <Eye className="mr-2 h-4 w-4" /> View Evidence
-              </Button>
-            </CardFooter>
-          </Card>
-        ))}
+    <div className="space-y-4">
+      <div className="flex flex-col md:flex-row gap-3 justify-between">
+        <div className="relative flex items-center w-full md:w-64">
+          <Search className="absolute left-2.5 h-4 w-4 text-gray-400" />
+          <Input
+            type="search"
+            placeholder="Search evidence..."
+            className="pl-8"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          {searchTerm && (
+            <button 
+              className="absolute right-2.5"
+              onClick={() => setSearchTerm('')}
+            >
+              <X className="h-4 w-4 text-gray-400" />
+            </button>
+          )}
+        </div>
+        
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full md:w-auto">
+          <TabsList>
+            <TabsTrigger value="all">All</TabsTrigger>
+            <TabsTrigger value="image">Images</TabsTrigger>
+            <TabsTrigger value="video">Videos</TabsTrigger>
+            <TabsTrigger value="document">Documents</TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
 
-      <Dialog open={isDialogOpen} onOpenChange={handleDialogClose}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{selectedEvidence?.title || 'Evidence Details'}</DialogTitle>
-            <DialogDescription>
-              {selectedEvidence?.description || 'No description available'}
-            </DialogDescription>
-          </DialogHeader>
-
-          <Tabs defaultValue="evidence" className="mt-4">
-            <TabsList>
-              <TabsTrigger value="evidence">Evidence</TabsTrigger>
-              <TabsTrigger value="details">Details</TabsTrigger>
-              <TabsTrigger value="report">Report Info</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="evidence" className="py-4">
-              <div className="border rounded-md overflow-hidden p-2">
-                {renderEvidenceContent()}
-              </div>
-            </TabsContent>
-
-            <TabsContent value="details" className="py-4">
-              <div className="space-y-4">
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500">Evidence Type</h3>
-                  <p className="capitalize">{selectedEvidence?.type || 'Unknown'}</p>
-                </div>
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500">Uploaded At</h3>
-                  <p>{selectedEvidence?.uploaded_at ? new Date(selectedEvidence.uploaded_at).toLocaleString() : 'Unknown'}</p>
-                </div>
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500">Description</h3>
-                  <p>{selectedEvidence?.description || 'No description provided'}</p>
-                </div>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="report" className="py-4">
-              {selectedEvidence?.report ? (
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-500">Report Title</h3>
-                    <p>{selectedEvidence.report.title || 'Untitled Report'}</p>
+      {isLoading ? (
+        <div className="flex justify-center items-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="ml-2 text-gray-500">Loading evidence...</span>
+        </div>
+      ) : filteredEvidence.length === 0 ? (
+        <div className="text-center py-12 border rounded-md">
+          <File className="h-12 w-12 mx-auto text-gray-300" />
+          <p className="mt-2 text-gray-500">No evidence found</p>
+          {searchTerm && (
+            <p className="text-sm text-gray-400">Try adjusting your search term</p>
+          )}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredEvidence.map((item) => (
+            <Card 
+              key={item.id} 
+              className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+              onClick={() => handleViewEvidence(item)}
+            >
+              <CardContent className="p-4">
+                <div className="flex items-start">
+                  <div className="bg-gray-100 p-3 rounded-md mr-3">
+                    {getEvidenceTypeIcon(item.type)}
                   </div>
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-500">Report Status</h3>
-                    <Badge variant={selectedEvidence.report.status === 'approved' ? 'default' : 'outline'}>
-                      {selectedEvidence.report.status}
-                    </Badge>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-500">Report Date</h3>
-                    <p>{selectedEvidence.report.report_date ? new Date(selectedEvidence.report.report_date).toLocaleString() : 'Unknown'}</p>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-500">Incident Location</h3>
-                    <p>{selectedEvidence.report.location || 'No location provided'}</p>
+                  <div className="flex-1 overflow-hidden">
+                    <h3 className="font-medium truncate">{item.title || 'Untitled'}</h3>
+                    <p className="text-sm text-gray-500 truncate">{item.description || 'No description'}</p>
+                    <div className="mt-2 flex items-center gap-2">
+                      <Badge variant="outline" className="text-xs">
+                        {item.type || 'Unknown type'}
+                      </Badge>
+                      <span className="text-xs text-gray-400">
+                        {new Date(item.uploaded_at).toLocaleDateString()}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  No related report information available
-                </div>
-              )}
-            </TabsContent>
-          </Tabs>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
 
-          <div className="flex justify-end mt-4 space-x-2">
-            {selectedEvidence?.storage_path && (
-              <Button variant="outline" onClick={() => window.open(selectedEvidence.storage_path, '_blank')}>
-                <Download className="mr-2 h-4 w-4" /> Download
+      {selectedEvidence && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 md:p-8">
+          <div className="bg-white rounded-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+            <div className="p-4 border-b flex justify-between items-center">
+              <h2 className="text-lg font-semibold">{selectedEvidence.title || 'Evidence Details'}</h2>
+              <Button variant="ghost" size="sm" onClick={handleClearSelection}>
+                <X className="h-4 w-4" />
               </Button>
-            )}
-            <Button onClick={handleDialogClose}>
-              Close
-            </Button>
+            </div>
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <h3 className="font-medium mb-2">Evidence Information</h3>
+                  <dl className="space-y-2">
+                    <div>
+                      <dt className="text-sm text-gray-500">Title</dt>
+                      <dd>{selectedEvidence.title || 'Untitled'}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm text-gray-500">Description</dt>
+                      <dd>{selectedEvidence.description || 'No description provided'}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm text-gray-500">Type</dt>
+                      <dd>{selectedEvidence.type || 'Unknown'}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm text-gray-500">Uploaded</dt>
+                      <dd>{new Date(selectedEvidence.uploaded_at).toLocaleString()}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm text-gray-500">ID</dt>
+                      <dd className="text-xs">{selectedEvidence.id}</dd>
+                    </div>
+                  </dl>
+                </div>
+                <div>
+                  <h3 className="font-medium mb-2">Preview</h3>
+                  {selectedEvidence.storage_path ? (
+                    <div className="border rounded-md p-2 h-[200px] flex items-center justify-center">
+                      {selectedEvidence.type?.includes('image') ? (
+                        <img 
+                          src={selectedEvidence.storage_path} 
+                          alt={selectedEvidence.title || 'Evidence'} 
+                          className="max-h-full object-contain"
+                        />
+                      ) : selectedEvidence.type?.includes('video') ? (
+                        <video 
+                          src={selectedEvidence.storage_path} 
+                          controls 
+                          className="max-h-full max-w-full"
+                        />
+                      ) : (
+                        <div className="text-center">
+                          {getEvidenceTypeIcon(selectedEvidence.type)}
+                          <p className="text-sm mt-2">Preview not available</p>
+                          <Button size="sm" className="mt-2" asChild>
+                            <a href={selectedEvidence.storage_path} target="_blank" rel="noopener noreferrer">
+                              Download
+                            </a>
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="border rounded-md p-4 text-center text-gray-500">
+                      No file available
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="mt-6 flex justify-end">
+                <Button variant="outline" onClick={handleClearSelection}>Close</Button>
+              </div>
+            </div>
           </div>
-        </DialogContent>
-      </Dialog>
+        </div>
+      )}
     </div>
   );
 };
