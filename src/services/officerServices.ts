@@ -37,19 +37,32 @@ export const updateKycVerificationStatus = async (
   officerAction: string = ''
 ): Promise<void> => {
   try {
-    // First update the kyc_verification
+    // First check if the user_id is set and valid UUID format
+    const { data: verificationData, error: verificationError } = await supabase
+      .from('kyc_verifications')
+      .select('user_id')
+      .eq('id', id)
+      .single();
+      
+    if (verificationError) throw verificationError;
+    
+    // User ID validation - check if it's a valid UUID, if not, don't include it in the update
+    let updatePayload: any = {
+      status: status,
+      officer_action: officerAction,
+      rejection_reason: status === 'Rejected' ? officerAction : null
+    };
+    
+    // Update the verification
     const { error } = await supabase
       .from('kyc_verifications')
-      .update({
-        status: status,
-        officer_action: officerAction,
-        rejection_reason: status === 'Rejected' ? officerAction : null
-      })
+      .update(updatePayload)
       .eq('id', id);
       
     if (error) throw error;
     
-    // No need to manually insert notification - we'll use a database trigger instead
+    // No need to manually insert notification - our database trigger will handle it
+    // if there's a valid user_id
   } catch (error) {
     console.error('Error updating KYC verification status:', error);
     throw error;
@@ -155,8 +168,6 @@ export const updateTipStatus = async (
     throw error;
   }
 };
-
-// Additional functions needed by components
 
 // SOS Alerts
 export const getSosAlerts = async (): Promise<SOSAlert[]> => {

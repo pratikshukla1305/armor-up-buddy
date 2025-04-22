@@ -27,6 +27,7 @@ const KycVerificationList = ({ limit }: KycVerificationListProps) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('details');
   const [isLoading, setIsLoading] = useState(true);
+  const [processing, setProcessing] = useState<number | null>(null);
   const { toast } = useToast();
 
   const fetchVerifications = async () => {
@@ -60,6 +61,7 @@ const KycVerificationList = ({ limit }: KycVerificationListProps) => {
 
   const handleApprove = async (id: number) => {
     try {
+      setProcessing(id);
       const officerAction = "Verification approved";
       await updateKycVerificationStatus(id, "Approved", officerAction);
       await fetchVerifications();
@@ -74,14 +76,17 @@ const KycVerificationList = ({ limit }: KycVerificationListProps) => {
       console.error("Error approving KYC verification:", error);
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || "Failed to approve verification. The user ID may be invalid.",
         variant: "destructive",
       });
+    } finally {
+      setProcessing(null);
     }
   };
 
   const handleReject = async (id: number, reason = "Verification rejected") => {
     try {
+      setProcessing(id);
       await updateKycVerificationStatus(id, "Rejected", reason);
       await fetchVerifications();
       if (isDialogOpen) {
@@ -95,9 +100,11 @@ const KycVerificationList = ({ limit }: KycVerificationListProps) => {
       console.error("Error rejecting KYC verification:", error);
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || "Failed to reject verification. The user ID may be invalid.",
         variant: "destructive",
       });
+    } finally {
+      setProcessing(null);
     }
   };
 
@@ -146,6 +153,11 @@ const KycVerificationList = ({ limit }: KycVerificationListProps) => {
               <div className="mt-1">
                 {getStatusBadge(verification.status || 'Pending')}
               </div>
+              {verification.user_id ? (
+                <p className="text-xs text-gray-400 mt-1">User ID: {verification.user_id}</p>
+              ) : (
+                <p className="text-xs text-yellow-500 mt-1">No user ID (demo data)</p>
+              )}
             </div>
           </div>
           <div className="flex space-x-2 self-end sm:self-center">
@@ -165,8 +177,13 @@ const KycVerificationList = ({ limit }: KycVerificationListProps) => {
                   size="sm" 
                   className="flex items-center text-green-600 hover:text-green-700 hover:bg-green-50 border-green-200"
                   onClick={() => handleApprove(verification.id)}
+                  disabled={processing === verification.id}
                 >
-                  <Check className="h-4 w-4 mr-1" />
+                  {processing === verification.id ? (
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  ) : (
+                    <Check className="h-4 w-4 mr-1" />
+                  )}
                   Approve
                 </Button>
                 <Button 
@@ -174,8 +191,13 @@ const KycVerificationList = ({ limit }: KycVerificationListProps) => {
                   size="sm" 
                   className="flex items-center text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
                   onClick={() => handleReject(verification.id)}
+                  disabled={processing === verification.id}
                 >
-                  <X className="h-4 w-4 mr-1" />
+                  {processing === verification.id ? (
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  ) : (
+                    <X className="h-4 w-4 mr-1" />
+                  )}
                   Reject
                 </Button>
               </>
