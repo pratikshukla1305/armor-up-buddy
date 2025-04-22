@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -237,7 +238,7 @@ const EvidenceRequestsList = ({ limit = 5 }: EvidenceRequestsListProps) => {
               <h3 className="font-medium">{request.title}</h3>
             </div>
             <Badge 
-              className={``
+              className={`
                 ${request.status === 'active' ? 'bg-green-100 text-green-800' : 
                   request.status === 'expired' ? 'bg-amber-100 text-amber-800' : 
                   'bg-gray-100 text-gray-800'}
@@ -307,7 +308,7 @@ const EvidenceRequestsList = ({ limit = 5 }: EvidenceRequestsListProps) => {
               <div>
                 <h3 className="text-lg font-medium mb-1">{selectedRequest.title}</h3>
                 <Badge 
-                  className={``
+                  className={`
                     ${selectedRequest.status === 'active' ? 'bg-green-100 text-green-800' : 
                       selectedRequest.status === 'expired' ? 'bg-amber-100 text-amber-800' : 
                       'bg-gray-100 text-gray-800'}
