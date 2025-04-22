@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { 
   Table, TableBody, TableCaption, TableCell, 
@@ -206,7 +207,17 @@ const ReportsList = ({ limit }: ReportListProps) => {
     setIsSubmitting(true);
 
     try {
-      const formattedStatus = newStatus.toLowerCase();
+      // Map UI-friendly status terms to database values if needed
+      const statusMapping: { [key: string]: string } = {
+        'submitted': 'submitted',
+        'processing': 'processing',
+        'completed': 'completed',
+        'rejected': 'rejected'
+      };
+      
+      const formattedStatus = statusMapping[newStatus.toLowerCase()] || newStatus.toLowerCase();
+      
+      console.log('Submitting status update:', formattedStatus);
       
       const result = await updateReportStatus(selectedReport.id, formattedStatus, officerNotes);
 

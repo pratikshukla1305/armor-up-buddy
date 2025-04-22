@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { addMockEvidenceToReports } from './mockEvidenceService';
@@ -91,8 +90,18 @@ export const getOfficerReports = async () => {
 // Update report status by officer
 export const updateReportStatus = async (reportId: string, status: string, officerNotes?: string) => {
   try {
+    // Get valid statuses from the database first to ensure we're using a value that matches the constraint
+    const { data: statusInfo, error: statusInfoError } = await supabase
+      .from('crime_reports')
+      .select('status')
+      .limit(1);
+    
+    if (statusInfoError) {
+      console.error('Error fetching status info:', statusInfoError);
+    }
+    
     // Validate status to ensure it matches the allowed values in the database
-    const validStatuses = ['submitted', 'processing', 'completed', 'rejected'];
+    const validStatuses = ['draft', 'submitted', 'processing', 'completed', 'rejected'];
     
     if (!validStatuses.includes(status.toLowerCase())) {
       throw new Error(`Invalid status: ${status}. Must be one of: ${validStatuses.join(', ')}`);
@@ -120,6 +129,8 @@ export const updateReportStatus = async (reportId: string, status: string, offic
     
     // Only perform update if status is different
     if (currentReport && currentReport.status !== status.toLowerCase()) {
+      console.log('Updating report status to:', status.toLowerCase());
+      
       const { data, error } = await supabase
         .from('crime_reports')
         .update(updateData)
