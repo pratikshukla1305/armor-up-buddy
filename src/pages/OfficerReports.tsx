@@ -4,12 +4,14 @@ import OfficerNavbar from '@/components/officer/OfficerNavbar';
 import ReportsList from '@/components/officer/ReportsList';
 import { Button } from '@/components/ui/button';
 import { RefreshCw } from 'lucide-react';
+import { toast } from 'sonner';
 
 const OfficerReports = () => {
   const [refreshKey, setRefreshKey] = useState(0);
   
   const handleRefresh = () => {
     setRefreshKey(prev => prev + 1);
+    toast.info("Refreshing reports list...");
   };
 
   return (

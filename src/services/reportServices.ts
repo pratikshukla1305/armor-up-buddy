@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { addMockEvidenceToReports } from './mockEvidenceService';
@@ -80,7 +81,22 @@ export const getOfficerReports = async () => {
     
     console.log("Reports with evidence:", reportsWithEvidence);
     
-    return reportsWithEvidence;
+    // Ensure all reports have their evidence properly structured
+    const processedReports = reportsWithEvidence.map(report => {
+      // Make sure evidence array is defined
+      if (!report.evidence) {
+        report.evidence = [];
+      }
+      
+      // Make sure report_pdfs array is defined
+      if (!report.report_pdfs) {
+        report.report_pdfs = [];
+      }
+      
+      return report;
+    });
+    
+    return processedReports;
   } catch (error: any) {
     console.error('Error fetching officer reports:', error);
     throw error;

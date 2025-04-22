@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { 
   Table, TableBody, TableCaption, TableCell, 
@@ -224,6 +223,7 @@ const ReportsList = ({ limit }: ReportListProps) => {
       if (result) {
         toast.success(`Report status updated to ${formattedStatus}`);
         setStatusDialogOpen(false);
+        // Refresh the reports list to show the updated status
         fetchReports();
       } else {
         throw new Error('Failed to update status');
