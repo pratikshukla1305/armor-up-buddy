@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -106,6 +105,19 @@ const GenerateDetailedReport = () => {
     detectCurrentLocation();
   }, [location.search]);
   
+  const getAddressFromCoordinates = async (latitude: number, longitude: number) => {
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
+      );
+      const data = await response.json();
+      return data.display_name || null;
+    } catch (error) {
+      console.error("Error getting address:", error);
+      return null;
+    }
+  };
+  
   const fetchExistingAnalysis = async (reportId: string) => {
     try {
       const result = await getReportAnalysis(reportId);
@@ -150,18 +162,23 @@ const GenerateDetailedReport = () => {
     
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
-        (position) => {
+        async (position) => {
           console.log("Location detected:", position.coords);
-          const detectedLocation = `${position.coords.latitude}, ${position.coords.longitude}`;
-          locationForm.setValue('location', detectedLocation);
+          const { latitude, longitude } = position.coords;
+          
+          // Get address from coordinates
+          const address = await getAddressFromCoordinates(latitude, longitude);
+          const locationText = address 
+            ? `${address} (${latitude}, ${longitude})`
+            : `${latitude}, ${longitude}`;
+            
+          locationForm.setValue('location', locationText);
           toast.success("Current location detected successfully");
           setIsDetectingLocation(false);
         },
         (error) => {
           console.error("Error getting location:", error);
           toast.error("Could not detect location. Please enter manually.");
-          
-          // Set a default location if detection fails
           locationForm.setValue('location', "Unknown location - please update manually");
           setIsDetectingLocation(false);
         },
@@ -749,12 +766,6 @@ const GenerateDetailedReport = () => {
                   <p className="text-sm text-gray-500 mb-1">Evidence Items</p>
                   <p className="font-medium">{uploadedImages.length} Videos/Images, 1 Description</p>
                 </div>
-                <div>
-                  <p className="text-sm text-gray-500 mb-1">Blockchain Status</p>
-                  <p className="font-medium flex items-center">
-                    <Check className="h-4 w-4 text-green-500 mr-1" /> Verified
-                  </p>
-                </div>
               </div>
               
               <div className="mt-4">
@@ -871,99 +882,4 @@ const GenerateDetailedReport = () => {
             ) : (
               <div className="text-center">
                 <div className="mb-6">
-                  <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-green-100 mb-2">
-                    <Check className="h-6 w-6 text-green-500" />
-                  </div>
-                  <h3 className="text-lg font-medium text-green-700">Report Generated Successfully!</h3>
-                </div>
-                
-                <div className="flex flex-col sm:flex-row gap-4 justify-center mb-6">
-                  <Button 
-                    className="bg-shield-blue text-white hover:bg-blue-600 transition-all"
-                    onClick={handleDownload}
-                  >
-                    <Download className="mr-2 h-4 w-4" /> Download PDF Report
-                  </Button>
-                  
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button 
-                        variant="outline" 
-                        className="border-shield-blue text-shield-blue hover:bg-shield-blue hover:text-white transition-all"
-                      >
-                        <Share2 className="mr-2 h-4 w-4" /> Share Report
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="center">
-                      <div className="flex flex-col">
-                        <Button 
-                          variant="ghost"
-                          className="justify-start rounded-none"
-                          onClick={() => handleShare('whatsapp')}
-                        >
-                          <div className="bg-green-500 rounded-full p-1 mr-2">
-                            <MessageCircle size={14} color="white" />
-                          </div>
-                          WhatsApp
-                        </Button>
-                        <Button 
-                          variant="ghost"
-                          className="justify-start rounded-none"
-                          onClick={() => handleShare('telegram')}
-                        >
-                          <div className="bg-blue-500 rounded-full p-1 mr-2">
-                            <Send size={14} color="white" />
-                          </div>
-                          Telegram
-                        </Button>
-                        <Button 
-                          variant="ghost"
-                          className="justify-start rounded-none"
-                          onClick={() => handleShare('email')}
-                        >
-                          <div className="bg-gray-500 rounded-full p-1 mr-2">
-                            <Mail size={14} color="white" />
-                          </div>
-                          Email
-                        </Button>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                
-                {isSharingEmail && (
-                  <div className="bg-gray-50 rounded-lg border border-gray-200 p-4 mb-6">
-                    {renderEmailShareForm()}
-                  </div>
-                )}
-                
-                <div className="mt-8 pt-8 border-t border-gray-200">
-                  <p className="text-gray-700 mb-4">Send this report to an officer for further processing</p>
-                  <Button 
-                    className="bg-green-600 text-white hover:bg-green-700 transition-all"
-                    onClick={handleSendToOfficer}
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <RotateCcw className="mr-2 h-4 w-4 animate-spin" /> Sending...
-                      </>
-                    ) : (
-                      <>
-                        <Send className="mr-2 h-4 w-4" /> Send to Officer
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
-      
-      <Footer />
-    </div>
-  );
-};
-
-export default GenerateDetailedReport;
+                  <div className="inline-flex items-center justify-center w-12 h-12 rounded
