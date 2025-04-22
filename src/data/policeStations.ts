@@ -2,82 +2,82 @@
 export const policeStations = [
   {
     id: "police-station-1",
-    name: "Office of Commissioner of Police",
-    address: "132, E VK Sampath Rd, Periamet, Vepery, Park Town, Chennai, Tamil Nadu 600007, India",
-    phone: "+914423452380",
-    coordinates: { lat: 13.0827, lng: 80.2707 },
-    jurisdiction: "Chennai Metropolitan Area",
+    name: "Tambaram Police Station",
+    address: "GST Road, Tambaram, Chennai, Tamil Nadu 600045, India",
+    phone: "+914422265100",
+    coordinates: { lat: 12.9249, lng: 80.1000 },
+    jurisdiction: "Tambaram Area",
     hours: "24 hours / 7 days",
-    services: ["FIR Filing", "Emergency Response", "Administrative Services", "Public Grievances"],
-    rating: 4.2,
-    reviewCount: 156,
+    services: ["FIR Filing", "Emergency Response", "Patrol Services"],
+    rating: 4.0,
+    reviewCount: 120,
     reviews: [
-      { name: "Rajesh Kumar", text: "Well-maintained facility with professional staff. Prompt response to my complaint.", date: "1 month ago" },
-      { name: "Anita Sharma", text: "The officers were helpful and guided me through the process of filing a complaint. Good experience overall.", date: "3 months ago" }
+      { name: "Rajesh Kumar", text: "Quick response time for emergencies", date: "2 months ago" },
+      { name: "Priya S", text: "Professional and helpful staff", date: "1 month ago" }
     ]
   },
   {
     id: "police-station-2",
-    name: "C2 Elephant Gate Police Station",
-    address: "37VG+337, Near Elephant Gate Bridge, Adhi Andra Colony, George Town, Chennai, Tamil Nadu 600108, India",
-    phone: "+914423452467",
-    coordinates: { lat: 13.0964, lng: 80.2765 },
-    jurisdiction: "Elephant Gate, George Town Area",
+    name: "Vandalur Police Station",
+    address: "Vandalur-Kelambakkam Road, Vandalur, Chennai, Tamil Nadu 600048, India",
+    phone: "+914422751100",
+    coordinates: { lat: 12.8912, lng: 80.0851 },
+    jurisdiction: "Vandalur Area",
     hours: "24 hours / 7 days",
-    services: ["FIR Filing", "Emergency Response", "Patrol Services", "Community Outreach"],
-    rating: 3.8,
-    reviewCount: 92,
+    services: ["FIR Filing", "Emergency Response", "Community Outreach"],
+    rating: 4.2,
+    reviewCount: 85,
     reviews: [
-      { name: "Vikram Singh", text: "Quick registration of my complaint. The staff was courteous and helpful.", date: "2 months ago" },
-      { name: "Meera Patel", text: "Had to wait for quite some time, but the officers were professional once I got to meet them.", date: "4 months ago" }
+      { name: "Suresh R", text: "Very helpful in emergency situations", date: "3 months ago" },
+      { name: "Lakshmi N", text: "Staff is courteous and professional", date: "1 month ago" }
     ]
   },
   {
     id: "police-station-3",
-    name: "C1 Flower Bazaar Police Station",
-    address: "37QJ+8MW, Rattan Bazaar Rd, Rattan Bazaar, George Town, Chennai, Tamil Nadu 600001, India",
-    phone: "+914423452465",
-    coordinates: { lat: 13.0891, lng: 80.2867 },
-    jurisdiction: "Flower Bazaar, Rattan Bazaar Area",
+    name: "Guduvancheri Police Station",
+    address: "GST Road, Guduvancheri, Chennai, Tamil Nadu 603202, India",
+    phone: "+914427463100",
+    coordinates: { lat: 12.8451, lng: 80.0566 },
+    jurisdiction: "Guduvancheri Area",
     hours: "24 hours / 7 days",
-    services: ["FIR Filing", "Emergency Response", "Traffic Control", "Lost & Found"],
-    rating: 4.0,
-    reviewCount: 118,
+    services: ["FIR Filing", "Emergency Response", "Traffic Control"],
+    rating: 3.9,
+    reviewCount: 95,
     reviews: [
-      { name: "Sanjay Verma", text: "The station was clean and organized. Officers were attentive to my concerns.", date: "1 month ago" },
-      { name: "Lakshmi Narayan", text: "Efficient handling of my lost property report. Very helpful staff.", date: "2 months ago" }
+      { name: "Mohammed K", text: "Good response to emergency calls", date: "2 months ago" },
+      { name: "Anitha P", text: "Helpful in registering complaints", date: "1 month ago" }
     ]
   },
   {
     id: "police-station-4",
-    name: "Egmore Police Station",
-    address: "48, Pantheon Rd, Egmore, Chennai, Tamil Nadu 600008, India",
-    phone: "+914423452430",
-    coordinates: { lat: 13.0729, lng: 80.2598 },
-    jurisdiction: "Egmore Area",
+    name: "Urapakkam Police Station",
+    address: "Urapakkam Main Road, Urapakkam, Chennai, Tamil Nadu 603210, India",
+    phone: "+914427465100",
+    coordinates: { lat: 12.8570, lng: 80.0680 },
+    jurisdiction: "Urapakkam Area",
     hours: "24 hours / 7 days",
-    services: ["FIR Filing", "Emergency Response", "Verification Services", "Senior Citizen Assistance"],
+    services: ["FIR Filing", "Emergency Response", "Night Patrol"],
     rating: 4.1,
-    reviewCount: 135,
+    reviewCount: 75,
     reviews: [
-      { name: "Arjun Reddy", text: "The officers handled my case with sensitivity and professionalism. Impressed with their service.", date: "2 months ago" },
-      { name: "Priyanka Chopra", text: "Quick response time. The station was well-maintained and staff was helpful.", date: "3 months ago" }
+      { name: "Karthik S", text: "Prompt action on complaints", date: "1 month ago" },
+      { name: "Meena R", text: "Efficient handling of cases", date: "2 months ago" }
     ]
   },
   {
     id: "police-station-5",
-    name: "Triplicane Police Station",
-    address: "Triplicane High Rd, Triplicane, Chennai, Tamil Nadu 600005, India",
-    phone: "+914423452440",
-    coordinates: { lat: 13.0567, lng: 80.2702 },
-    jurisdiction: "Triplicane Area",
+    name: "Maraimalai Nagar Police Station",
+    address: "Maraimalai Nagar, Chennai, Tamil Nadu 603209, India",
+    phone: "+914427452100",
+    coordinates: { lat: 12.7924, lng: 80.0190 },
+    jurisdiction: "Maraimalai Nagar Area",
     hours: "24 hours / 7 days",
-    services: ["FIR Filing", "Emergency Response", "Community Policing", "Patrolling"],
-    rating: 3.9,
-    reviewCount: 105,
+    services: ["FIR Filing", "Emergency Response", "Community Policing"],
+    rating: 4.0,
+    reviewCount: 88,
     reviews: [
-      { name: "Mohammed Ali", text: "The officers were respectful and listened to my concerns patiently. Good service.", date: "1 month ago" },
-      { name: "Kavita Krishnan", text: "The station had good facilities and the staff was professional.", date: "3 months ago" }
+      { name: "Vignesh K", text: "Good surveillance in the area", date: "2 months ago" },
+      { name: "Divya S", text: "Quick response to emergencies", date: "1 month ago" }
     ]
   }
 ];
