@@ -60,6 +60,7 @@ export const submitReportToOfficer = async (reportId: string) => {
 // Get reports for officer
 export const getOfficerReports = async () => {
   try {
+    console.log("Fetching officer reports...");
     const { data, error } = await supabase
       .from('crime_reports')
       .select('*, evidence(*), report_pdfs(*)')
@@ -67,8 +68,11 @@ export const getOfficerReports = async () => {
       .order('updated_at', { ascending: false });
     
     if (error) {
+      console.error("Error fetching reports:", error);
       throw error;
     }
+    
+    console.log("Raw reports data:", data);
     
     // Add mock evidence to reports that don't have any (for demo purposes)
     const reportsWithEvidence = addMockEvidenceToReports(data || []);

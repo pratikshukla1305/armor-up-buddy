@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { getSosAlerts, updateSosAlertStatus } from '@/services/officerServices';
@@ -6,6 +5,7 @@ import { SOSAlert } from '@/types/officer';
 import AlertCard from './AlertCard';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface SOSAlertsListProps {
   limit?: number;
@@ -14,18 +14,22 @@ interface SOSAlertsListProps {
 const SOSAlertsList: React.FC<SOSAlertsListProps> = ({ limit }) => {
   const [alerts, setAlerts] = useState<SOSAlert[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { toast } = useToast();
+  const { toast: toastHook } = useToast();
 
   const fetchAlerts = async () => {
     setIsLoading(true);
     try {
+      console.log("Starting SOS alert fetch...");
       const data = await getSosAlerts();
       console.log("Fetched SOS alerts:", data);
       const limitedData = limit ? data.slice(0, limit) : data;
       setAlerts(limitedData);
+      if (data.length === 0) {
+        console.log("No SOS alerts found in database");
+      }
     } catch (error: any) {
       console.error("Error fetching SOS alerts:", error);
-      toast({
+      toastHook({
         title: "Error fetching alerts",
         description: error.message,
         variant: "destructive",
@@ -57,10 +61,8 @@ const SOSAlertsList: React.FC<SOSAlertsListProps> = ({ limit }) => {
           
           // Show notification for new alerts
           if (payload.eventType === 'INSERT') {
-            toast({
-              title: "New SOS Alert",
+            toast("New SOS Alert", {
               description: "A new emergency alert has been received",
-              variant: "destructive", // Make it red for urgency
             });
           }
         }
@@ -138,19 +140,19 @@ const SOSAlertsList: React.FC<SOSAlertsListProps> = ({ limit }) => {
       supabase.removeChannel(voiceChannel);
       supabase.removeChannel(tipsChannel);
     };
-  }, [limit, toast]);
+  }, [limit, toastHook]);
 
   const handleStatusUpdate = async (alertId: string, status: string) => {
     try {
       await updateSosAlertStatus(alertId, status);
-      toast({
+      toastHook({
         title: "Status updated",
         description: `Alert status updated to ${status}`,
       });
       fetchAlerts(); // Refresh the alerts after updating
     } catch (error: any) {
       console.error("Error updating SOS alert status:", error);
-      toast({
+      toastHook({
         title: "Error updating status",
         description: error.message,
         variant: "destructive",
