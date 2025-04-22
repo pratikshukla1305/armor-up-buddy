@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -101,6 +102,7 @@ const GenerateDetailedReport = () => {
       fetchExistingAnalysis(id);
     }
     
+    // Automatically detect location when component mounts
     detectCurrentLocation();
   }, [location.search]);
   
@@ -159,6 +161,7 @@ const GenerateDetailedReport = () => {
           console.error("Error getting location:", error);
           toast.error("Could not detect location. Please enter manually.");
           
+          // Set a default location if detection fails
           locationForm.setValue('location', "Unknown location - please update manually");
           setIsDetectingLocation(false);
         },
@@ -874,62 +877,76 @@ const GenerateDetailedReport = () => {
                   <h3 className="text-lg font-medium text-green-700">Report Generated Successfully!</h3>
                 </div>
                 
-                <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex flex-col sm:flex-row gap-4 justify-center mb-6">
                   <Button 
-                    variant="outline" 
-                    className="flex-1"
+                    className="bg-shield-blue text-white hover:bg-blue-600 transition-all"
                     onClick={handleDownload}
                   >
-                    <Download className="mr-2 h-4 w-4" /> Download Report
+                    <Download className="mr-2 h-4 w-4" /> Download PDF Report
                   </Button>
                   
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button 
                         variant="outline" 
-                        className="flex-1"
+                        className="border-shield-blue text-shield-blue hover:bg-shield-blue hover:text-white transition-all"
                       >
                         <Share2 className="mr-2 h-4 w-4" /> Share Report
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-56">
-                      <div className="grid gap-2">
+                    <PopoverContent className="w-auto p-0" align="center">
+                      <div className="flex flex-col">
                         <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="justify-start"
+                          variant="ghost"
+                          className="justify-start rounded-none"
                           onClick={() => handleShare('whatsapp')}
                         >
-                          <MessageCircle className="mr-2 h-4 w-4" /> WhatsApp
+                          <div className="bg-green-500 rounded-full p-1 mr-2">
+                            <MessageCircle size={14} color="white" />
+                          </div>
+                          WhatsApp
                         </Button>
                         <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="justify-start"
+                          variant="ghost"
+                          className="justify-start rounded-none"
                           onClick={() => handleShare('telegram')}
                         >
-                          <MessageCircle className="mr-2 h-4 w-4" /> Telegram
+                          <div className="bg-blue-500 rounded-full p-1 mr-2">
+                            <Send size={14} color="white" />
+                          </div>
+                          Telegram
                         </Button>
                         <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="justify-start"
+                          variant="ghost"
+                          className="justify-start rounded-none"
                           onClick={() => handleShare('email')}
                         >
-                          <Mail className="mr-2 h-4 w-4" /> Email
+                          <div className="bg-gray-500 rounded-full p-1 mr-2">
+                            <Mail size={14} color="white" />
+                          </div>
+                          Email
                         </Button>
                       </div>
                     </PopoverContent>
                   </Popover>
-                  
+                </div>
+                
+                {isSharingEmail && (
+                  <div className="bg-gray-50 rounded-lg border border-gray-200 p-4 mb-6">
+                    {renderEmailShareForm()}
+                  </div>
+                )}
+                
+                <div className="mt-8 pt-8 border-t border-gray-200">
+                  <p className="text-gray-700 mb-4">Send this report to an officer for further processing</p>
                   <Button 
-                    className="bg-shield-blue text-white hover:bg-blue-600 transition-all flex-1"
+                    className="bg-green-600 text-white hover:bg-green-700 transition-all"
                     onClick={handleSendToOfficer}
                     disabled={isSubmitting}
                   >
                     {isSubmitting ? (
                       <>
-                        <RotateCcw className="mr-2 h-4 w-4 animate-spin" /> Submitting...
+                        <RotateCcw className="mr-2 h-4 w-4 animate-spin" /> Sending...
                       </>
                     ) : (
                       <>
@@ -943,18 +960,6 @@ const GenerateDetailedReport = () => {
           </div>
         </div>
       </section>
-      
-      {isSharingEmail && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg max-w-md w-full">
-            <div className="flex justify-between items-center p-4 border-b">
-              <h3 className="font-medium">Share via Email</h3>
-              <Button variant="ghost" size="sm" onClick={() => setIsSharingEmail(false)}>X</Button>
-            </div>
-            {renderEmailShareForm()}
-          </div>
-        </div>
-      )}
       
       <Footer />
     </div>

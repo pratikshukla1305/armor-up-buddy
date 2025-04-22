@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -143,6 +144,8 @@ const OfficerCriminalPanel = () => {
     
     try {
       for (const criminal of mockCriminals) {
+        // Convert danger level to proper case format for the database constraint
+        // Map "low", "medium", "high" to "Low", "Medium", "High"
         const riskLevel = criminal.dangerLevel.charAt(0).toUpperCase() + criminal.dangerLevel.slice(1).toLowerCase();
         
         await createCriminalProfile({
@@ -152,7 +155,7 @@ const OfficerCriminalPanel = () => {
           weight: parseFloat(criminal.weight) || null,
           last_known_location: criminal.lastKnownLocation,
           case_number: criminal.caseNumber,
-          risk_level: riskLevel,
+          risk_level: riskLevel, // Use the properly formatted risk level
           charges: criminal.charges,
           additional_information: criminal.description || '',
           photo_url: criminal.photoUrl
@@ -194,8 +197,6 @@ const OfficerCriminalPanel = () => {
         console.log("Photo uploaded, URL:", photoUrl);
       }
       
-      const formattedRiskLevel = formData.risk_level.charAt(0).toUpperCase() + formData.risk_level.slice(1).toLowerCase();
-      
       await createCriminalProfile({
         full_name: formData.full_name,
         age: formData.age ? parseInt(formData.age) : null,
@@ -203,7 +204,7 @@ const OfficerCriminalPanel = () => {
         weight: formData.weight ? parseFloat(formData.weight) : null,
         last_known_location: formData.last_known_location,
         case_number: formData.case_number,
-        risk_level: formattedRiskLevel,
+        risk_level: formData.risk_level,
         charges: formData.charges,
         additional_information: formData.additional_information,
         photo_url: photoUrl
@@ -444,11 +445,11 @@ const OfficerCriminalPanel = () => {
                           {tip.is_anonymous ? (
                             <span className="italic text-gray-500">Anonymous report</span>
                           ) : (
-                            <div className="space-y-1">
+                            <>
                               {tip.submitter_name && <div>Name: {tip.submitter_name}</div>}
                               {tip.email && <div>Email: {tip.email}</div>}
                               {tip.phone && <div>Phone: {tip.phone}</div>}
-                            </div>
+                            </>
                           )}
                         </div>
                       </div>
@@ -783,10 +784,10 @@ const OfficerCriminalPanel = () => {
             </Button>
             <Button onClick={handleSubmit} disabled={!formData.full_name || !formData.case_number || isUploading}>
               {isUploading ? (
-                <div>
+                <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Adding...
-                </div>
+                </>
               ) : (
                 'Add Criminal Profile'
               )}
