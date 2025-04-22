@@ -11,11 +11,11 @@ import { submitReportToOfficer } from '@/services/reportServices';
 import { saveReportPdf } from '@/services/reportPdfService';
 import { supabase } from '@/integrations/supabase/client';
 import jsPDF from 'jspdf';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
 
 const SelfReportForm = () => {
   const { user } = useAuth();
-  const navigate = useNavigate();
+  const navigate = useNavigate(); // Add navigation
   const [description, setDescription] = useState('');
   const [name, setName] = useState('');
   const [age, setAge] = useState('');
@@ -26,7 +26,7 @@ const SelfReportForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [pdfUrl, setPdfUrl] = useState('');
-  const [phone, setPhone] = useState('');
+  const [phone, setPhone] = useState(''); // Add phone number field
 
   const generatePdfReport = async () => {
     const pdf = new jsPDF();
@@ -69,9 +69,11 @@ const SelfReportForm = () => {
       const pdf = await generatePdfReport();
       const pdfBlob = pdf.output('blob');
       
+      // Create a URL for local download
       const pdfUrl = URL.createObjectURL(pdfBlob);
       setPdfUrl(pdfUrl);
 
+      // Create a new report in the database - excluding age, gender since those fields don't exist in the table
       const { data: reportData, error } = await supabase
         .from('crime_reports')
         .insert([
@@ -81,9 +83,9 @@ const SelfReportForm = () => {
             description: description,
             location: isAnonymous ? null : location,
             is_anonymous: isAnonymous,
-            status: 'draft',
+            status: 'submitted', // Change status to submitted
             officer_notes: isConfidential ? 'CONFIDENTIAL: Keep private' : '',
-            phone: isAnonymous ? null : phone,
+            phone: isAnonymous ? null : phone, // Add phone to the report
           },
         ])
         .select()
@@ -91,13 +93,16 @@ const SelfReportForm = () => {
 
       if (error) throw error;
 
+      // Save PDF to storage
       await saveReportPdf(reportData.id, pdfBlob, `self_report_${new Date().getTime()}.pdf`, true);
       
+      // Submit report to officer
       await submitReportToOfficer(reportData.id);
 
       toast.success('Your report has been submitted successfully');
       setIsSuccess(true);
 
+      // Navigate to dashboard after successful submission
       navigate('/dashboard');
     } catch (error) {
       console.error('Error submitting report:', error);

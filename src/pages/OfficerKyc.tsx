@@ -1,17 +1,9 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import OfficerNavbar from '@/components/officer/OfficerNavbar';
 import KycVerificationList from '@/components/officer/KycVerificationList';
-import { Button } from '@/components/ui/button';
-import { RefreshCw } from 'lucide-react';
 
 const OfficerKyc = () => {
-  const [refreshKey, setRefreshKey] = useState(0);
-  
-  const handleRefresh = () => {
-    setRefreshKey(prev => prev + 1);
-  };
-
   return (
     <div className="min-h-screen bg-gray-50">
       <OfficerNavbar />
@@ -22,18 +14,9 @@ const OfficerKyc = () => {
             <h1 className="text-2xl font-bold text-gray-900">KYC Verifications</h1>
             <p className="text-gray-600">Verify user identity documents and manage KYC submissions</p>
           </div>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleRefresh}
-            className="flex items-center gap-2"
-          >
-            <RefreshCw className="h-4 w-4" />
-            Refresh
-          </Button>
         </div>
         
-        <KycVerificationList key={refreshKey} />
+        <KycVerificationList />
       </div>
     </div>
   );

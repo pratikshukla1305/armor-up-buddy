@@ -60,52 +60,14 @@ export const submitReportToOfficer = async (reportId: string) => {
 // Get reports for officer
 export const getOfficerReports = async () => {
   try {
-    console.log("Fetching officer reports...");
-    console.log("Attempting to connect to Supabase...");
-    
-    // First try a simple connection test
-    const { error: testError } = await supabase
-      .from('crime_reports')
-      .select('count')
-      .limit(1);
-    
-    if (testError) {
-      console.error("Initial connection test failed:", testError);
-      throw new Error(`Connection test failed: ${testError.message} (Code: ${testError.code})`);
-    }
-    
-    // Modify the query to include all related data in a single query
-    console.log("Connection test successful, fetching reports with evidence and PDFs...");
     const { data, error } = await supabase
       .from('crime_reports')
-      .select(`
-        *,
-        evidence(*),
-        report_pdfs(*)
-      `)
-      .in('status', ['submitted', 'processing', 'completed', 'rejected'])
+      .select('*, evidence(*), report_pdfs(*)')
+      .in('status', ['submitted', 'processing', 'completed'])
       .order('updated_at', { ascending: false });
     
     if (error) {
-      console.error("Supabase query error:", error);
-      throw new Error(`Failed to fetch reports: ${error.message} (Code: ${error.code})`);
-    }
-    
-    console.log("Reports fetched from Supabase:", data);
-    
-    if (!data || data.length === 0) {
-      console.log("No reports found in the database");
-      return [];
-    }
-    
-    // Log the structure of the first report to debug issues with relations
-    if (data.length > 0) {
-      console.log("First report structure:", JSON.stringify({
-        id: data[0].id,
-        title: data[0].title,
-        evidenceCount: data[0].evidence?.length || 0,
-        pdfsCount: data[0].report_pdfs?.length || 0
-      }));
+      throw error;
     }
     
     // Add mock evidence to reports that don't have any (for demo purposes)
@@ -113,55 +75,18 @@ export const getOfficerReports = async () => {
     
     console.log("Reports with evidence:", reportsWithEvidence);
     
-    // Ensure all reports have their evidence properly structured
-    const processedReports = reportsWithEvidence.map(report => {
-      // Make sure evidence array is defined
-      if (!report.evidence) {
-        report.evidence = [];
-      }
-      
-      // Make sure report_pdfs array is defined
-      if (!report.report_pdfs) {
-        report.report_pdfs = [];
-      }
-      
-      return report;
-    });
-    
-    return processedReports;
+    return reportsWithEvidence;
   } catch (error: any) {
     console.error('Error fetching officer reports:', error);
-    console.error('Stack trace:', error.stack);
-    toast.error(`Failed to load reports: ${error.message}`);
-    // Return empty array instead of throwing to prevent UI from breaking
-    return [];
+    throw error;
   }
 };
 
 // Update report status by officer
 export const updateReportStatus = async (reportId: string, status: string, officerNotes?: string) => {
   try {
-    console.log(`Attempting to update report ${reportId} to status: ${status}`);
-    
-    // Get valid statuses from the database first to ensure we're using a value that matches the constraint
-    const { data: statusInfo, error: statusInfoError } = await supabase
-      .from('crime_reports')
-      .select('status')
-      .limit(1);
-    
-    if (statusInfoError) {
-      console.error('Error fetching status info:', statusInfoError);
-    }
-    
-    // Validate status to ensure it matches the allowed values in the database
-    const validStatuses = ['draft', 'submitted', 'processing', 'completed', 'rejected'];
-    
-    if (!validStatuses.includes(status.toLowerCase())) {
-      throw new Error(`Invalid status: ${status}. Must be one of: ${validStatuses.join(', ')}`);
-    }
-    
     const updateData: any = {
-      status: status.toLowerCase(), // Ensure lowercase to match DB constraint
+      status,
       updated_at: new Date().toISOString()
     };
     
@@ -169,57 +94,37 @@ export const updateReportStatus = async (reportId: string, status: string, offic
       updateData.officer_notes = officerNotes;
     }
     
-    // Get current report status before update
-    const { data: currentReport, error: fetchError } = await supabase
+    const { data, error } = await supabase
       .from('crime_reports')
-      .select('status, user_id')
+      .update(updateData)
+      .eq('id', reportId)
+      .select();
+    
+    if (error) {
+      throw error;
+    }
+
+    // Get the user ID for this report to send notification
+    const { data: reportData, error: reportError } = await supabase
+      .from('crime_reports')
+      .select('user_id')
       .eq('id', reportId)
       .single();
-      
-    if (fetchError) {
-      console.error('Error fetching current report:', fetchError);
-      throw fetchError;
+    
+    if (!reportError && reportData) {
+      // Create user notification
+      await supabase
+        .from('user_notifications')
+        .insert({
+          user_id: reportData.user_id,
+          report_id: reportId,
+          notification_type: 'officer_action',
+          is_read: false,
+          message: `An officer has updated your report status to: ${status}`
+        });
     }
     
-    // Only perform update if status is different
-    if (currentReport && currentReport.status !== status.toLowerCase()) {
-      console.log('Updating report status to:', status.toLowerCase());
-      
-      const { data, error } = await supabase
-        .from('crime_reports')
-        .update(updateData)
-        .eq('id', reportId)
-        .select();
-      
-      if (error) {
-        console.error('Detailed update error:', error);
-        throw error;
-      }
-
-      // Create user notification if user_id exists
-      if (currentReport.user_id) {
-        try {
-          // Create user notification
-          await supabase
-            .from('user_notifications')
-            .insert({
-              user_id: currentReport.user_id,
-              report_id: reportId,
-              notification_type: 'officer_action',
-              is_read: false,
-              message: `An officer has updated your report status to: ${status.toLowerCase()}`
-            });
-        } catch (notificationError) {
-          console.error('Error creating user notification:', notificationError);
-          // Don't throw here to avoid blocking the main operation
-        }
-      }
-      
-      return data;
-    } else {
-      // No change in status, just return the current report
-      return [currentReport];
-    }
+    return data;
   } catch (error: any) {
     console.error('Error updating report status:', error);
     toast.error(`Failed to update status: ${error.message}`);

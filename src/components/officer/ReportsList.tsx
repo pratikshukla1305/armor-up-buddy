@@ -206,69 +206,25 @@ const ReportsList = ({ limit }: ReportListProps) => {
     setIsSubmitting(true);
 
     try {
-      // Map UI-friendly status terms to database values if needed
-      const statusMapping: { [key: string]: string } = {
-        'submitted': 'submitted',
-        'processing': 'processing',
-        'completed': 'completed',
-        'rejected': 'rejected'
-      };
-      
-      const formattedStatus = statusMapping[newStatus.toLowerCase()] || newStatus.toLowerCase();
-      
-      console.log('Submitting status update:', formattedStatus);
-      
-      const result = await updateReportStatus(selectedReport.id, formattedStatus, officerNotes);
+      const result = await updateReportStatus(selectedReport.id, newStatus, officerNotes);
 
       if (result) {
-        toast.success(`Report status updated to ${formattedStatus}`);
+        toast.success(`Report status updated to ${newStatus}`);
         setStatusDialogOpen(false);
-        // Refresh the reports list to show the updated status
         fetchReports();
       } else {
         throw new Error('Failed to update status');
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error updating status:", error);
-      
-      let errorMessage = "Failed to update report status";
-      if (error.message) {
-        if (error.message.includes("violates check constraint")) {
-          errorMessage = "Invalid status value. Please use one of: submitted, processing, completed, rejected";
-        } else {
-          errorMessage = `Error: ${error.message}`;
-        }
-      }
-      
-      toast.error(errorMessage);
+      toast.error("Failed to update report status");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const playVideo = (url: string) => {
-    console.log("Attempting to play video:", url);
-    // Check if URL is valid first
-    if (!url) {
-      console.error("Invalid video URL:", url);
-      toast.error("Invalid video URL. The resource may be missing or inaccessible.");
-      return;
-    }
-    
-    // Test if URL is accessible first
-    fetch(url, { method: 'HEAD' })
-      .then(response => {
-        if (!response.ok) {
-          console.error(`Video URL returned status ${response.status}:`, url);
-          toast.error(`Cannot access video (${response.status} error). The file may be missing or inaccessible.`);
-          return;
-        }
-        setSelectedVideo(url);
-      })
-      .catch(error => {
-        console.error("Error accessing video URL:", error);
-        toast.error(`Cannot access video: ${error.message}`);
-      });
+    setSelectedVideo(url);
   };
 
   const isVideoUrl = (url: string): boolean => {
@@ -477,18 +433,8 @@ const ReportsList = ({ limit }: ReportListProps) => {
                 autoPlay
                 className="w-full h-full"
                 onError={(e) => {
-                  const target = e.target as HTMLVideoElement;
-                  console.error("Video loading error:", {
-                    error: e,
-                    src: target.src,
-                    networkState: target.networkState,
-                    readyState: target.readyState,
-                    error: target.error ? {
-                      code: target.error.code,
-                      message: target.error.message
-                    } : 'No error data'
-                  });
-                  toast.error(`Failed to load video: ${target.error?.message || 'The format may be unsupported or the URL is invalid'}`);
+                  console.error("Video loading error:", e);
+                  toast.error("Failed to load video. The format may be unsupported or the URL is invalid.");
                 }}
               >
                 Your browser does not support the video tag.
