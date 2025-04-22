@@ -39,20 +39,36 @@ const ConnectionTest: React.FC<ConnectionTestProps> = ({ onComplete }) => {
       }
       
       // Get list of available tables
-      const { data: tables, error: tablesError } = await supabase
-        .from('pg_catalog.pg_tables')
-        .select('tablename')
-        .eq('schemaname', 'public');
+      // Instead of directly querying pg_catalog.pg_tables, we'll list tables we know exist
+      const knownTables = [
+        'crime_reports', 'evidence', 'report_pdfs', 'officer_notifications',
+        'criminal_profiles', 'advisories', 'cases', 'sos_alerts'
+      ];
       
-      const tableNames = tablesError ? [] : (tables || []).map((t: any) => t.tablename);
+      // Try to query each table to confirm it exists and is accessible
+      const accessibleTables = [];
+      for (const table of knownTables) {
+        try {
+          const { error: tableError } = await supabase
+            .from(table)
+            .select('count')
+            .limit(1);
+          
+          if (!tableError) {
+            accessibleTables.push(table);
+          }
+        } catch (err) {
+          console.log(`Table ${table} check error:`, err);
+        }
+      }
       
       setTestResults({
         connected: true,
-        tables: tableNames
+        tables: accessibleTables
       });
       
       console.log("Connection test successful");
-      console.log("Available tables:", tableNames);
+      console.log("Available tables:", accessibleTables);
       
       if (onComplete) onComplete(true);
     } catch (error: any) {

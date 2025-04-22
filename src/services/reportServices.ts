@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { addMockEvidenceToReports } from './mockEvidenceService';
@@ -62,7 +61,7 @@ export const submitReportToOfficer = async (reportId: string) => {
 export const getOfficerReports = async () => {
   try {
     console.log("Fetching officer reports...");
-    console.log("Supabase URL:", supabase.supabaseUrl); // Log the supabase URL (without credentials)
+    console.log("Attempting to connect to Supabase...");
     
     // First try a simple connection test
     const { error: testError } = await supabase
