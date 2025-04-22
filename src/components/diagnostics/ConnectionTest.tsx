@@ -47,19 +47,69 @@ const ConnectionTest: React.FC<ConnectionTestProps> = ({ onComplete }) => {
       
       // Try to query each table to confirm it exists and is accessible
       const accessibleTables = [];
-      for (const table of knownTables) {
-        try {
-          const { error: tableError } = await supabase
-            .from(table)
-            .select('count')
-            .limit(1);
-          
-          if (!tableError) {
-            accessibleTables.push(table);
-          }
-        } catch (err) {
-          console.log(`Table ${table} check error:`, err);
-        }
+      
+      // Test crime_reports
+      try {
+        const { error: tableError } = await supabase.from('crime_reports').select('count').limit(1);
+        if (!tableError) accessibleTables.push('crime_reports');
+      } catch (err) {
+        console.log('Table crime_reports check error:', err);
+      }
+      
+      // Test evidence
+      try {
+        const { error: tableError } = await supabase.from('evidence').select('count').limit(1);
+        if (!tableError) accessibleTables.push('evidence');
+      } catch (err) {
+        console.log('Table evidence check error:', err);
+      }
+      
+      // Test report_pdfs
+      try {
+        const { error: tableError } = await supabase.from('report_pdfs').select('count').limit(1);
+        if (!tableError) accessibleTables.push('report_pdfs');
+      } catch (err) {
+        console.log('Table report_pdfs check error:', err);
+      }
+      
+      // Test officer_notifications
+      try {
+        const { error: tableError } = await supabase.from('officer_notifications').select('count').limit(1);
+        if (!tableError) accessibleTables.push('officer_notifications');
+      } catch (err) {
+        console.log('Table officer_notifications check error:', err);
+      }
+      
+      // Test criminal_profiles
+      try {
+        const { error: tableError } = await supabase.from('criminal_profiles').select('count').limit(1);
+        if (!tableError) accessibleTables.push('criminal_profiles');
+      } catch (err) {
+        console.log('Table criminal_profiles check error:', err);
+      }
+      
+      // Test advisories
+      try {
+        const { error: tableError } = await supabase.from('advisories').select('count').limit(1);
+        if (!tableError) accessibleTables.push('advisories');
+      } catch (err) {
+        console.log('Table advisories check error:', err);
+      }
+      
+      // Test cases
+      try {
+        const { error: tableError } = await supabase.from('cases').select('count').limit(1);
+        if (!tableError) accessibleTables.push('cases');
+      } catch (err) {
+        console.log('Table cases check error:', err);
+      }
+      
+      // Test sos_alerts
+      try {
+        const { error: tableError } = await supabase.from('sos_alerts').select('count').limit(1);
+        if (!tableError) accessibleTables.push('sos_alerts');
+      } catch (err) {
+        console.log('Table sos_alerts check error:', err);
       }
       
       setTestResults({
