@@ -1,4 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
+import jsPDF from 'jspdf';
+import { v4 as uuidv4 } from 'uuid';
 
 export interface ReportPdf {
   id?: string;
