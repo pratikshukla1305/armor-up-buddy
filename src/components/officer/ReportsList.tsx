@@ -148,19 +148,28 @@ const ReportsList = ({ limit }: ReportListProps) => {
         link.click();
         document.body.removeChild(link);
         
-        fetch('/api/update-officer-materials', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            reportId: report.id,
-            pdfId: pdfFile.id,
-            pdfName: pdfFile.file_name,
-            pdfUrl: pdfFile.file_url,
-            pdfIsOfficial: pdfFile.is_official || false
-          })
-        }).catch(err => console.error("Failed to update officer materials:", err));
+        try {
+          console.log("Updating officer materials with PDF info");
+          const { data, error } = await fetch('/api/update-officer-materials', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              reportId: report.id,
+              pdfId: pdfFile.id,
+              pdfName: pdfFile.file_name,
+              pdfUrl: pdfFile.file_url,
+              pdfIsOfficial: pdfFile.is_official || false
+            }),
+          }).then(res => res.json());
+          
+          if (error) {
+            console.error("Error updating officer materials:", error);
+          }
+        } catch (updateError) {
+          console.error("Failed to update officer materials:", updateError);
+        }
         
         if (officer && officer.id) {
           await logPdfDownload(
@@ -197,6 +206,7 @@ const ReportsList = ({ limit }: ReportListProps) => {
     setIsSubmitting(true);
 
     try {
+      // Map UI-friendly status terms to database values if needed
       const statusMapping: { [key: string]: string } = {
         'submitted': 'submitted',
         'processing': 'processing',
@@ -213,6 +223,7 @@ const ReportsList = ({ limit }: ReportListProps) => {
       if (result) {
         toast.success(`Report status updated to ${formattedStatus}`);
         setStatusDialogOpen(false);
+        // Refresh the reports list to show the updated status
         fetchReports();
       } else {
         throw new Error('Failed to update status');
@@ -237,12 +248,14 @@ const ReportsList = ({ limit }: ReportListProps) => {
 
   const playVideo = (url: string) => {
     console.log("Attempting to play video:", url);
+    // Check if URL is valid first
     if (!url) {
       console.error("Invalid video URL:", url);
       toast.error("Invalid video URL. The resource may be missing or inaccessible.");
       return;
     }
     
+    // Test if URL is accessible first
     fetch(url, { method: 'HEAD' })
       .then(response => {
         if (!response.ok) {
@@ -296,9 +309,8 @@ const ReportsList = ({ limit }: ReportListProps) => {
         pdfName: pdf.file_name,
         pdfUrl: pdf.file_url,
         pdfIsOfficial: pdf.is_official || false
-      })
+      }),
     }).catch(err => console.error("Failed to update officer materials:", err));
-    
     return null;
   };
 
