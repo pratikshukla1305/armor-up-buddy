@@ -1,11 +1,26 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import OfficerNavbar from '@/components/officer/OfficerNavbar';
 import ReportsList from '@/components/officer/ReportsList';
 import { toast } from 'sonner';
+import { Loader2, RefreshCcw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 const OfficerReports = () => {
   const [isLoading, setIsLoading] = useState(false);
+  const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
+
+  const handleRefresh = () => {
+    setIsLoading(true);
+    // Update the last refresh timestamp
+    setLastRefresh(new Date());
+    
+    // Simulate refresh with a small delay
+    setTimeout(() => {
+      toast.success("Reports refreshed successfully");
+      setIsLoading(false);
+    }, 800);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -16,25 +31,30 @@ const OfficerReports = () => {
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Reports Management</h1>
             <p className="text-gray-600">Review and manage user submitted reports and evidence</p>
+            <p className="text-xs text-gray-500 mt-1">
+              Last refreshed: {lastRefresh.toLocaleTimeString()}
+            </p>
           </div>
-          <button 
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-            onClick={() => {
-              setIsLoading(true);
-              // Simulate refresh
-              setTimeout(() => {
-                toast.success("Reports refreshed");
-                window.location.reload();
-                setIsLoading(false);
-              }, 500);
-            }}
+          <Button 
+            className="flex items-center gap-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            onClick={handleRefresh}
             disabled={isLoading}
           >
-            {isLoading ? 'Refreshing...' : 'Refresh Reports'}
-          </button>
+            {isLoading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Refreshing...</span>
+              </>
+            ) : (
+              <>
+                <RefreshCcw className="h-4 w-4" />
+                <span>Refresh Reports</span>
+              </>
+            )}
+          </Button>
         </div>
         
-        <ReportsList />
+        <ReportsList key={lastRefresh.getTime()} />
       </div>
     </div>
   );

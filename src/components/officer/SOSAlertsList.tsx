@@ -63,7 +63,7 @@ const SOSAlertsList: React.FC<SOSAlertsListProps> = ({ limit }) => {
           // Show notification for new alerts
           if (payload.eventType === 'INSERT') {
             toast("New SOS Alert", {
-              description: "A new emergency alert has been received",
+              description: "A new emergency alert has been received"
             });
           }
         }
@@ -91,7 +91,7 @@ const SOSAlertsList: React.FC<SOSAlertsListProps> = ({ limit }) => {
           if (payload.eventType === 'INSERT') {
             // Show notification for new voice recordings
             toast("New Voice Recording", {
-              description: "A voice recording has been added to an SOS alert",
+              description: "A voice recording has been added to an SOS alert"
             });
           }
           
@@ -121,7 +121,7 @@ const SOSAlertsList: React.FC<SOSAlertsListProps> = ({ limit }) => {
           if (payload.eventType === 'INSERT') {
             // Show notification for new tips
             toast("New Criminal Sighting Report", {
-              description: "A new criminal sighting has been reported",
+              description: "A new criminal sighting has been reported"
             });
           }
         }
@@ -137,7 +137,7 @@ const SOSAlertsList: React.FC<SOSAlertsListProps> = ({ limit }) => {
       supabase.removeChannel(voiceChannel);
       supabase.removeChannel(tipsChannel);
     };
-  }, [limit, toastHook]);
+  }, [limit]);
 
   const handleStatusUpdate = async (alertId: string, status: string) => {
     try {
