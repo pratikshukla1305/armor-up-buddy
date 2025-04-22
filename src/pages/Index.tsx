@@ -7,6 +7,7 @@ import UploadCard from '@/components/UploadCard';
 import ReportCard from '@/components/ReportCard';
 import AuthButton from '@/components/AuthButton';
 import SelfReportSection from '@/components/home/SelfReportSection';
+import InstallPWA from '@/components/InstallPWA';
 import { Shield, Video, FileText, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -85,7 +86,7 @@ const Index = () => {
               </p>
               
               <ul className="space-y-4 mb-8">
-                {[
+                {[ 
                   'Instant crime type identification',
                   'Detailed scene description generation',
                   'Object and person detection',
@@ -221,6 +222,7 @@ const Index = () => {
       </section>
       
       <Footer />
+      <InstallPWA />
     </div>
   );
 };

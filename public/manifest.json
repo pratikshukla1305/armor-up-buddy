@@ -1,0 +1,22 @@
+
+{
+  "name": "Shield - Crime Reporting Platform",
+  "short_name": "Shield",
+  "theme_color": "#0F172A",
+  "background_color": "#ffffff",
+  "display": "standalone",
+  "scope": "/",
+  "start_url": "/",
+  "icons": [
+    {
+      "src": "/lovable-uploads/00a07965-bc8b-4f6a-bc7e-501ea6f60893.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/lovable-uploads/00a07965-bc8b-4f6a-bc7e-501ea6f60893.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
