@@ -16,6 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { getKycVerifications, updateKycVerificationStatus } from '@/services/officerServices';
 import { KycVerification } from '@/types/officer';
+import { Textarea } from '@/components/ui/textarea';
 
 interface KycVerificationListProps {
   limit?: number;
@@ -27,6 +28,8 @@ const KycVerificationList = ({ limit }: KycVerificationListProps) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('details');
   const [isLoading, setIsLoading] = useState(true);
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
   const fetchVerifications = async () => {
@@ -56,11 +59,14 @@ const KycVerificationList = ({ limit }: KycVerificationListProps) => {
     setSelectedVerification(verification);
     setIsDialogOpen(true);
     setActiveTab('details');
+    setRejectionReason('');
   };
 
   const handleApprove = async (id: number) => {
+    setIsSubmitting(true);
     try {
       const officerAction = "Verification approved";
+      console.log(`Approving KYC verification ${id} with action: ${officerAction}`);
       await updateKycVerificationStatus(id, "Approved", officerAction);
       await fetchVerifications();
       if (isDialogOpen) {
@@ -77,11 +83,16 @@ const KycVerificationList = ({ limit }: KycVerificationListProps) => {
         description: error.message,
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const handleReject = async (id: number, reason = "Verification rejected") => {
+  const handleReject = async (id: number) => {
+    setIsSubmitting(true);
     try {
+      const reason = rejectionReason || "Verification rejected";
+      console.log(`Rejecting KYC verification ${id} with reason: ${reason}`);
       await updateKycVerificationStatus(id, "Rejected", reason);
       await fetchVerifications();
       if (isDialogOpen) {
@@ -98,6 +109,9 @@ const KycVerificationList = ({ limit }: KycVerificationListProps) => {
         description: error.message,
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
+      setRejectionReason('');
     }
   };
 
@@ -165,15 +179,23 @@ const KycVerificationList = ({ limit }: KycVerificationListProps) => {
                   size="sm" 
                   className="flex items-center text-green-600 hover:text-green-700 hover:bg-green-50 border-green-200"
                   onClick={() => handleApprove(verification.id)}
+                  disabled={isSubmitting}
                 >
-                  <Check className="h-4 w-4 mr-1" />
-                  Approve
+                  {isSubmitting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <>
+                      <Check className="h-4 w-4 mr-1" />
+                      Approve
+                    </>
+                  )}
                 </Button>
                 <Button 
                   variant="outline" 
                   size="sm" 
                   className="flex items-center text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
-                  onClick={() => handleReject(verification.id)}
+                  onClick={() => handleView(verification)}
+                  disabled={isSubmitting}
                 >
                   <X className="h-4 w-4 mr-1" />
                   Reject
@@ -334,6 +356,27 @@ const KycVerificationList = ({ limit }: KycVerificationListProps) => {
               </TabsContent>
             </Tabs>
             
+            {(!selectedVerification.status || selectedVerification.status.toLowerCase() === 'pending') && (
+              <div className="mt-4 border-t pt-4">
+                <h3 className="text-sm font-medium mb-2">Verification Decision</h3>
+                
+                {activeTab === 'details' && (
+                  <div className="space-y-3">
+                    <div>
+                      <Label htmlFor="rejection-reason">Rejection Reason (optional)</Label>
+                      <Textarea 
+                        id="rejection-reason"
+                        placeholder="Provide a reason if rejecting this verification"
+                        value={rejectionReason}
+                        onChange={(e) => setRejectionReason(e.target.value)}
+                        className="mt-1"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            
             <DialogFooter className="flex justify-between mt-6">
               <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                 Close
@@ -345,15 +388,25 @@ const KycVerificationList = ({ limit }: KycVerificationListProps) => {
                     variant="outline" 
                     className="flex items-center text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
                     onClick={() => handleReject(selectedVerification.id)}
+                    disabled={isSubmitting}
                   >
-                    <X className="h-4 w-4 mr-1" />
+                    {isSubmitting ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                    ) : (
+                      <X className="h-4 w-4 mr-1" />
+                    )}
                     Reject
                   </Button>
                   <Button 
                     className="flex items-center bg-green-600 hover:bg-green-700 text-white"
                     onClick={() => handleApprove(selectedVerification.id)}
+                    disabled={isSubmitting}
                   >
-                    <Check className="h-4 w-4 mr-1" />
+                    {isSubmitting ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                    ) : (
+                      <Check className="h-4 w-4 mr-1" />
+                    )}
                     Approve
                   </Button>
                 </div>

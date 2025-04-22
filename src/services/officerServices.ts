@@ -13,15 +13,18 @@ export const getKycVerifications = async (): Promise<KycVerification[]> => {
   try {
     const { data, error } = await supabase
       .from('kyc_verifications')
-      .select('*')
+      .select('*, documents:kyc_documents(*)')
       .order('created_at', { ascending: false });
     
-    if (error) throw error;
+    if (error) {
+      console.error('Error in getKycVerifications:', error);
+      throw error;
+    }
     
-    // Add empty documents array to each verification to match the KycVerification type
+    // Ensure each verification has a documents array
     const verificationsWithDocuments = data?.map(verification => ({
       ...verification,
-      documents: [] // Initialize with empty array
+      documents: verification.documents || []
     })) || [];
     
     return verificationsWithDocuments;
@@ -37,7 +40,9 @@ export const updateKycVerificationStatus = async (
   officerAction: string = ''
 ): Promise<void> => {
   try {
-    // First update the kyc_verification
+    console.log(`Updating KYC status: id=${id}, status=${status}, reason=${officerAction}`);
+    
+    // Update the verification status
     const { error } = await supabase
       .from('kyc_verifications')
       .update({
@@ -47,9 +52,12 @@ export const updateKycVerificationStatus = async (
       })
       .eq('id', id);
       
-    if (error) throw error;
+    if (error) {
+      console.error('Error in updateKycVerificationStatus:', error);
+      throw error;
+    }
     
-    // No need to manually insert notification - we'll use a database trigger instead
+    console.log('KYC status updated successfully');
   } catch (error) {
     console.error('Error updating KYC verification status:', error);
     throw error;
@@ -64,7 +72,12 @@ export const getCriminals = async (): Promise<Criminal[]> => {
       .select('*')
       .order('created_at', { ascending: false });
       
-    if (error) throw error;
+    if (error) {
+      console.error('Error in getCriminals:', error);
+      throw error;
+    }
+    
+    console.log('Fetched criminals:', data);
     return data || [];
   } catch (error) {
     console.error('Error fetching criminals:', error);
@@ -74,13 +87,20 @@ export const getCriminals = async (): Promise<Criminal[]> => {
 
 export const addCriminal = async (criminal: Omit<Criminal, 'id' | 'created_at'>): Promise<Criminal> => {
   try {
+    console.log('Adding criminal with data:', criminal);
+    
     const { data, error } = await supabase
       .from('criminal_profiles')
       .insert([criminal])
       .select()
       .single();
       
-    if (error) throw error;
+    if (error) {
+      console.error('Error in addCriminal:', error);
+      throw error;
+    }
+    
+    console.log('Criminal added successfully:', data);
     return data;
   } catch (error) {
     console.error('Error adding criminal:', error);
@@ -156,7 +176,20 @@ export const updateTipStatus = async (
   }
 };
 
-// Additional functions needed by components
+// Criminal Profiles 
+export const getCriminalProfiles = async (): Promise<CriminalProfile[]> => {
+  return getCriminals();
+};
+
+export const createCriminalProfile = async (criminal: Omit<CriminalProfile, 'id' | 'created_at'>): Promise<CriminalProfile> => {
+  try {
+    console.log('Creating criminal profile with data:', criminal);
+    return addCriminal(criminal);
+  } catch (error) {
+    console.error('Error in createCriminalProfile:', error);
+    throw error;
+  }
+};
 
 // SOS Alerts
 export const getSosAlerts = async (): Promise<SOSAlert[]> => {
@@ -250,13 +283,38 @@ export const createCase = async (caseData: Partial<CaseData>): Promise<CaseData[
   }
 };
 
-// Criminal Profiles 
-export const getCriminalProfiles = async (): Promise<CriminalProfile[]> => {
-  return getCriminals();
+// Additional functions needed by components
+
+// Add a new function to fetch evidence for viewing
+export const getEvidenceById = async (evidenceId: string): Promise<any> => {
+  try {
+    const { data, error } = await supabase
+      .from('evidence')
+      .select('*, report:crime_reports(*)')
+      .eq('id', evidenceId)
+      .single();
+    
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error fetching evidence:', error);
+    throw error;
+  }
 };
 
-export const createCriminalProfile = async (criminal: Omit<CriminalProfile, 'id' | 'created_at'>): Promise<CriminalProfile> => {
-  return addCriminal(criminal);
+export const getAllEvidence = async (): Promise<any[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('evidence')
+      .select('*, report:crime_reports(title, status)')
+      .order('uploaded_at', { ascending: false });
+    
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching all evidence:', error);
+    throw error;
+  }
 };
 
 // Officer Registration

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,7 +9,9 @@ import {
   User, 
   Upload,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  Check,
+  X
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -22,7 +23,13 @@ import {
   DialogTrigger,
   DialogClose
 } from '@/components/ui/dialog';
-import { createCriminalProfile, getCriminalProfiles, getCriminalTips } from '@/services/officerServices';
+import { 
+  createCriminalProfile, 
+  getCriminalProfiles, 
+  getCriminalTips,
+  deleteCriminal,
+  updateCriminal 
+} from '@/services/officerServices';
 import { uploadCriminalPhoto } from '@/utils/uploadUtils';
 import { useOfficerAuth } from '@/contexts/OfficerAuthContext';
 import { CriminalProfile, CriminalTip } from '@/types/officer';
@@ -144,8 +151,6 @@ const OfficerCriminalPanel = () => {
     
     try {
       for (const criminal of mockCriminals) {
-        // Convert danger level to proper case format for the database constraint
-        // Map "low", "medium", "high" to "Low", "Medium", "High"
         const riskLevel = criminal.dangerLevel.charAt(0).toUpperCase() + criminal.dangerLevel.slice(1).toLowerCase();
         
         await createCriminalProfile({
@@ -155,7 +160,7 @@ const OfficerCriminalPanel = () => {
           weight: parseFloat(criminal.weight) || null,
           last_known_location: criminal.lastKnownLocation,
           case_number: criminal.caseNumber,
-          risk_level: riskLevel, // Use the properly formatted risk level
+          risk_level: riskLevel,
           charges: criminal.charges,
           additional_information: criminal.description || '',
           photo_url: criminal.photoUrl
@@ -197,7 +202,7 @@ const OfficerCriminalPanel = () => {
         console.log("Photo uploaded, URL:", photoUrl);
       }
       
-      await createCriminalProfile({
+      const criminalData = {
         full_name: formData.full_name,
         age: formData.age ? parseInt(formData.age) : null,
         height: formData.height ? parseFloat(formData.height) : null,
@@ -208,7 +213,12 @@ const OfficerCriminalPanel = () => {
         charges: formData.charges,
         additional_information: formData.additional_information,
         photo_url: photoUrl
-      });
+      };
+      
+      console.log("Creating criminal profile with data:", criminalData);
+      
+      const result = await createCriminalProfile(criminalData);
+      console.log("Criminal profile created:", result);
       
       toast.success("Criminal profile created", {
         description: "The profile has been added to the database"
@@ -445,11 +455,11 @@ const OfficerCriminalPanel = () => {
                           {tip.is_anonymous ? (
                             <span className="italic text-gray-500">Anonymous report</span>
                           ) : (
-                            <>
+                            <div className="space-y-1">
                               {tip.submitter_name && <div>Name: {tip.submitter_name}</div>}
                               {tip.email && <div>Email: {tip.email}</div>}
                               {tip.phone && <div>Phone: {tip.phone}</div>}
-                            </>
+                            </div>
                           )}
                         </div>
                       </div>
@@ -784,10 +794,10 @@ const OfficerCriminalPanel = () => {
             </Button>
             <Button onClick={handleSubmit} disabled={!formData.full_name || !formData.case_number || isUploading}>
               {isUploading ? (
-                <>
+                <div className="flex items-center">
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Adding...
-                </>
+                </div>
               ) : (
                 'Add Criminal Profile'
               )}
