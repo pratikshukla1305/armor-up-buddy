@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -184,16 +183,10 @@ const EvidenceRequestsList = ({ limit = 5 }: EvidenceRequestsListProps) => {
         if (response.file_url.startsWith('http')) {
           window.open(response.file_url, '_blank');
         } else {
-          const { data, error } = supabase.storage
+          const { data } = supabase.storage
             .from('evidences')
             .getPublicUrl(response.file_url);
             
-          if (error) {
-            console.error("Error getting file URL:", error);
-            toast.error("Error viewing file: " + error.message);
-            return;
-          }
-          
           if (data && data.publicUrl) {
             window.open(data.publicUrl, '_blank');
           } else {
