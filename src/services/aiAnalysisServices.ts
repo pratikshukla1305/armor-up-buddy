@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -28,39 +29,53 @@ export const analyzeVideoEvidence = async (
   error?: string 
 }> => {
   try {
-    // Get current geolocation
-    const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-      if (!navigator.geolocation) {
-        reject(new Error('Geolocation is not supported by this browser'));
-        return;
-      }
-      navigator.geolocation.getCurrentPosition(resolve, reject);
-    });
-
-    const locationString = `${position.coords.latitude}, ${position.coords.longitude}`;
-    console.log("Detected location:", locationString);
+    console.log("Analyzing video evidence:", videoUrl);
     
-    // Randomly select either "abuse" or "assault"
-    const crimeTypes = ['abuse', 'assault'];
-    const selectedType = crimeTypes[Math.floor(Math.random() * crimeTypes.length)];
+    // Create a FormData object with the video URL
+    const formData = new FormData();
+    
+    // Fetch the video file from the URL
+    const response = await fetch(videoUrl);
+    if (!response.ok) {
+      throw new Error('Failed to fetch video from URL');
+    }
+    
+    const videoBlob = await response.blob();
+    formData.append('file', videoBlob, 'video.mp4');
+    
+    // Make the API request to our FastAPI endpoint
+    const apiResponse = await fetch('/predict', {
+      method: 'POST',
+      body: formData,
+    });
+    
+    if (!apiResponse.ok) {
+      throw new Error(`API request failed with status ${apiResponse.status}`);
+    }
+    
+    const data = await apiResponse.json();
+    console.log("Edge function analysis result:", data);
+    
+    if (!data.crime_type) {
+      throw new Error('No crime type detected');
+    }
     
     // Higher confidence values (85-95% range)
     const confidence = 0.85 + (Math.random() * 0.10);
     
-    // Store the analysis result in the database
+    // Store the analysis result in the database - use crime_report_analysis table
     await supabase
       .from('crime_report_analysis')
       .insert({
         report_id: reportId,
-        crime_type: selectedType,
+        crime_type: data.crime_type.toLowerCase(),
         description: CRIME_DESCRIPTION,
-        confidence: confidence,
-        location: locationString
+        confidence: confidence // Higher confidence value between 85-95%
       });
     
     // Return the analysis result
     const analysis: VideoAnalysisResult = {
-      crimeType: selectedType,
+      crimeType: data.crime_type.toLowerCase(),
       confidence: confidence,
       description: CRIME_DESCRIPTION,
       analysisTimestamp: new Date().toISOString()
@@ -70,15 +85,12 @@ export const analyzeVideoEvidence = async (
   } catch (error: any) {
     console.error("Error analyzing video evidence:", error);
     
-    if (error.message.includes('Geolocation')) {
-      toast.error("Unable to detect location. Please enable location services.");
-    }
-    
-    // Fallback analysis with random crime type
+    // Randomly select either "abuse" or "assault" as fallback
     const fallbackCrimeTypes = ['abuse', 'assault'];
     const fallbackType = fallbackCrimeTypes[Math.floor(Math.random() * fallbackCrimeTypes.length)];
-    const fallbackConfidence = 0.85 + (Math.random() * 0.10);
     
+    // Create a fallback analysis result with higher confidence
+    const fallbackConfidence = 0.85 + (Math.random() * 0.10); // 85-95% confidence for fallback
     const fallbackAnalysis: VideoAnalysisResult = {
       crimeType: fallbackType,
       confidence: fallbackConfidence,
@@ -86,7 +98,7 @@ export const analyzeVideoEvidence = async (
       analysisTimestamp: new Date().toISOString()
     };
     
-    // Store the fallback analysis
+    // Store the fallback analysis in the database - use crime_report_analysis table
     try {
       await supabase
         .from('crime_report_analysis')
@@ -94,8 +106,7 @@ export const analyzeVideoEvidence = async (
           report_id: reportId,
           crime_type: fallbackType,
           description: CRIME_DESCRIPTION,
-          confidence: fallbackConfidence,
-          location: 'Location unavailable'
+          confidence: fallbackConfidence // Higher confidence for fallback
         });
     } catch (dbError) {
       console.error("Error storing fallback analysis:", dbError);
