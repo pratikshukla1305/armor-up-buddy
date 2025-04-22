@@ -113,115 +113,18 @@ export const uploadEvidenceFile = async (
       throw uploadError;
     }
     
-    // Get URL (not public) - Fix the type error by properly awaiting and accessing data
-    const urlResult = await supabase.storage
+    // Get URL (not public)
+    const { data: urlData } = supabase.storage
       .from(bucketName)
       .createSignedUrl(filePath, 60 * 60 * 24 * 7); // 7 days
     
-    if (urlResult.data?.signedUrl) {
-      return urlResult.data.signedUrl;
+    if (urlData?.signedUrl) {
+      return urlData.signedUrl;
     }
     
     return null;
   } catch (error) {
     console.error('Error in uploadEvidenceFile:', error);
     return null;
-  }
-};
-
-// Add the missing functions that are used in UploadCard.tsx
-export const uploadFilesToSupabase = async (files: File[], userId: string): Promise<string[]> => {
-  try {
-    const uploadedUrls: string[] = [];
-    
-    // Create a unique folder for this upload session
-    const sessionId = uuidv4();
-    const bucketName = 'crime-evidence';
-    
-    // Check if storage is available
-    const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
-    
-    if (bucketsError) {
-      console.error('Error checking storage buckets:', bucketsError);
-      throw new Error('Storage not available');
-    }
-    
-    // Create or use the evidence bucket
-    const bucketExists = buckets.some(bucket => bucket.name === bucketName);
-    
-    if (!bucketExists) {
-      const { error: createError } = await supabase.storage.createBucket(bucketName, {
-        public: true, // For demonstration purposes
-      });
-      
-      if (createError) {
-        console.error('Error creating bucket:', createError);
-        throw new Error('Failed to create storage bucket');
-      }
-    }
-    
-    // Upload each file
-    for (const file of files) {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${uuidv4()}.${fileExt}`;
-      const filePath = `uploads/${userId}/${sessionId}/${fileName}`;
-      
-      // Upload file
-      const { error: uploadError } = await supabase.storage
-        .from(bucketName)
-        .upload(filePath, file);
-      
-      if (uploadError) {
-        console.error('Error uploading file:', uploadError);
-        continue; // Skip this file and try the next one
-      }
-      
-      // Get public URL
-      const { data: urlData } = supabase.storage
-        .from(bucketName)
-        .getPublicUrl(filePath);
-      
-      if (urlData.publicUrl) {
-        uploadedUrls.push(urlData.publicUrl);
-      }
-    }
-    
-    return uploadedUrls;
-  } catch (error) {
-    console.error('Error in uploadFilesToSupabase:', error);
-    return [];
-  }
-};
-
-export const createDraftReport = async (
-  userId: string, 
-  reportId: string, 
-  uploadedUrls: string[]
-): Promise<boolean> => {
-  try {
-    // Create a draft report entry in the database
-    const { error } = await supabase
-      .from('crime_reports')
-      .insert([
-        {
-          id: reportId,
-          user_id: userId,
-          title: 'Draft Report',
-          status: 'draft',
-          description: 'Automatically created draft report for uploaded evidence.',
-          media_urls: uploadedUrls,
-          created_at: new Date().toISOString()
-        }
-      ]);
-    
-    if (error) {
-      console.error('Error creating draft report:', error);
-      return false;
-    }
-    
-    return true;
-  } catch (error) {
-    console.error('Error in createDraftReport:', error);
-    return false;
   }
 };
