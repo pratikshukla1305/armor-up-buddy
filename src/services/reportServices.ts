@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { addMockEvidenceToReports } from './mockEvidenceService';
@@ -61,23 +62,82 @@ export const submitReportToOfficer = async (reportId: string) => {
 export const getOfficerReports = async () => {
   try {
     console.log("Fetching officer reports...");
-    const { data, error } = await supabase
+    
+    // First, fetch reports
+    const { data: reports, error: reportsError } = await supabase
       .from('crime_reports')
-      .select('*, evidence(*), report_pdfs(*)')
+      .select('*')
       .in('status', ['submitted', 'processing', 'completed'])
       .order('updated_at', { ascending: false });
     
-    if (error) {
-      console.error("Error fetching reports:", error);
-      throw error;
+    if (reportsError) {
+      console.error("Error fetching reports:", reportsError);
+      throw reportsError;
     }
     
-    console.log("Raw reports data:", data);
+    console.log("Raw reports data:", reports);
     
-    // Add mock evidence to reports that don't have any (for demo purposes)
-    const reportsWithEvidence = addMockEvidenceToReports(data || []);
+    if (!reports || reports.length === 0) {
+      console.log("No reports found with matching status");
+      return [];
+    }
     
-    console.log("Reports with evidence:", reportsWithEvidence);
+    // Fetch all evidence for these reports in a single query
+    const reportIds = reports.map(report => report.id);
+    const { data: allEvidence, error: evidenceError } = await supabase
+      .from('evidence')
+      .select('*')
+      .in('report_id', reportIds);
+    
+    if (evidenceError) {
+      console.error("Error fetching evidence:", evidenceError);
+      // Continue with reports but without evidence
+    }
+    
+    // Fetch all PDFs for these reports in a single query
+    const { data: allPdfs, error: pdfsError } = await supabase
+      .from('report_pdfs')
+      .select('*')
+      .in('report_id', reportIds);
+    
+    if (pdfsError) {
+      console.error("Error fetching PDFs:", pdfsError);
+      // Continue with reports but without PDFs
+    }
+    
+    // Organize evidence and PDFs by report_id
+    const evidenceByReportId: Record<string, any[]> = {};
+    const pdfsByReportId: Record<string, any[]> = {};
+    
+    if (allEvidence && allEvidence.length > 0) {
+      allEvidence.forEach(item => {
+        if (!evidenceByReportId[item.report_id]) {
+          evidenceByReportId[item.report_id] = [];
+        }
+        evidenceByReportId[item.report_id].push(item);
+      });
+    }
+    
+    if (allPdfs && allPdfs.length > 0) {
+      allPdfs.forEach(item => {
+        if (!pdfsByReportId[item.report_id]) {
+          pdfsByReportId[item.report_id] = [];
+        }
+        pdfsByReportId[item.report_id].push(item);
+      });
+    }
+    
+    // Combine data into reports
+    const reportsWithRelations = reports.map(report => ({
+      ...report,
+      evidence: evidenceByReportId[report.id] || [],
+      report_pdfs: pdfsByReportId[report.id] || []
+    }));
+    
+    console.log("Reports with evidence:", reportsWithRelations);
+    
+    // If we still don't have any reports with evidence, add mock evidence
+    const reportsWithEvidence = addMockEvidenceToReports(reportsWithRelations);
     
     return reportsWithEvidence;
   } catch (error: any) {
