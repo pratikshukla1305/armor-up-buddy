@@ -1,0 +1,454 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+    
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    
+    --primary: 215 59% 16%; /* Updated to #0D2644 from 262 83% 58% (#9b87f5) */
+    --primary-foreground: 0 0% 100%;
+    
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+    
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    
+    --accent: 215 59% 16%; /* Updated to #0D2644 from 262 83% 58% */
+    --accent-foreground: 0 0% 100%;
+    
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 215 59% 16%; /* Updated to #0D2644 from 262 83% 58% */
+    
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 222 47% 11%;
+    --foreground: 210 40% 98%;
+    
+    --card: 222 47% 11%;
+    --card-foreground: 210 40% 98%;
+    
+    --popover: 222 47% 11%;
+    --popover-foreground: 210 40% 98%;
+    
+    --primary: 215 59% 16%; /* Updated to #0D2644 from 262 83% 58% */
+    --primary-foreground: 210 40% 98%;
+    
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    
+    --accent: 215 59% 16%; /* Updated to #0D2644 from 262 83% 58% */
+    --accent-foreground: 210 40% 98%;
+    
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 215 59% 16%; /* Updated to #0D2644 from 262 83% 58% */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "ss01", "ss03", "cv01", "cv03";
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight text-stripe-slate;
+  }
+
+  h1 {
+    @apply text-4xl lg:text-5xl;
+  }
+
+  h2 {
+    @apply text-3xl lg:text-4xl;
+  }
+
+  h3 {
+    @apply text-2xl lg:text-3xl;
+  }
+
+  p {
+    @apply leading-7 text-stripe-text-secondary;
+  }
+}
+
+@layer components {
+  .glass {
+    @apply bg-white/80 backdrop-blur-md border border-white/20 shadow-lg;
+  }
+
+  .glass-card {
+    @apply glass rounded-2xl transition-all duration-300 hover:shadow-xl;
+  }
+
+  .section-padding {
+    @apply py-16 md:py-24;
+  }
+  
+  .container-padding {
+    @apply px-4 sm:px-6 lg:px-8;
+  }
+  
+  /* Stripe-inspired components */
+  .stripe-card {
+    @apply bg-white rounded-xl border border-stripe-border shadow-stripe transition-all duration-200 hover:shadow-stripe-hover;
+  }
+  
+  .stripe-button {
+    @apply bg-stripe-blue text-white rounded-md px-6 py-3 font-medium transition-all duration-300 hover:bg-stripe-blue-dark transform hover:-translate-y-0.5 shadow-stripe-button hover:shadow-stripe-button-hover;
+  }
+  
+  .stripe-input {
+    @apply rounded-md border border-stripe-border px-4 py-3 focus:ring-2 focus:ring-stripe-blue focus:border-transparent transition-all duration-200 shadow-sm hover:shadow-md;
+  }
+  
+  .stripe-section {
+    @apply py-20 px-6 md:px-12 lg:px-24;
+  }
+  
+  .stripe-gradient-text {
+    @apply bg-clip-text text-transparent bg-stripe-gradient;
+  }
+  
+  .stripe-dashboard-card {
+    @apply bg-white rounded-xl shadow-stripe-card p-6 border border-stripe-border;
+  }
+  
+  .stripe-security-badge {
+    @apply bg-security-gradient text-white text-xs font-semibold px-3 py-1 rounded-full;
+  }
+
+  /* New Stripe-inspired UI components */
+  .stripe-hero {
+    @apply bg-stripe-dark-gradient text-white py-24 px-6 md:py-32 relative overflow-hidden;
+  }
+
+  .stripe-hero-shape {
+    @apply absolute rounded-full opacity-20 bg-white blur-3xl;
+  }
+
+  .stripe-feature-card {
+    @apply bg-white rounded-xl border border-stripe-border shadow-stripe p-6 transition-all duration-300 hover:shadow-stripe-hover hover:border-stripe-blue-light hover:-translate-y-1;
+  }
+
+  .stripe-icon-box {
+    @apply bg-stripe-gray rounded-full p-3 inline-flex items-center justify-center mb-4;
+  }
+
+  .stripe-tag {
+    @apply inline-flex items-center rounded-full bg-stripe-gray px-3 py-1 text-xs font-medium text-stripe-slate;
+  }
+
+  .stripe-badge {
+    @apply inline-flex items-center rounded-full bg-stripe-blue/10 px-2.5 py-0.5 text-xs font-medium text-stripe-blue;
+  }
+
+  .stripe-link {
+    @apply text-stripe-blue hover:text-stripe-blue-dark transition-colors duration-200 font-medium;
+  }
+
+  .stripe-code-block {
+    @apply bg-stripe-slate-dark text-white rounded-lg p-4 font-mono text-sm overflow-x-auto;
+  }
+
+  .stripe-stat-card {
+    @apply bg-white rounded-xl border border-stripe-border shadow-stripe p-6 transition-all duration-200;
+  }
+
+  .stripe-stat-value {
+    @apply text-3xl font-bold text-stripe-slate;
+  }
+
+  .stripe-stat-label {
+    @apply text-sm text-stripe-text-muted;
+  }
+
+  .stripe-nav-link {
+    @apply text-stripe-text-secondary hover:text-stripe-blue transition-colors duration-200 font-medium text-sm;
+  }
+
+  .stripe-dropdown {
+    @apply bg-white rounded-lg shadow-stripe-dropdown border border-stripe-border;
+  }
+}
+
+/* Advanced Stripe animations */
+.shimmer {
+  background: linear-gradient(90deg, #f0f0f0 25%, #f8f8f8 50%, #f0f0f0 75%);
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite linear;
+}
+
+@keyframes logo-float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.logo-float {
+  animation: logo-float 6s ease-in-out infinite;
+}
+
+/* Custom SOS pulse animation - slower frequency (1s) */
+@keyframes sos-pulse {
+  0%, 100% { 
+    opacity: 1; 
+  }
+  50% { 
+    opacity: 0.7; 
+  }
+}
+
+.animate-sos-pulse {
+  animation: sos-pulse 1s ease-in-out infinite;
+}
+
+/* Stripe-inspired custom styles */
+.stripe-gradient-bg {
+  background: linear-gradient(135deg, #0A2540 0%, #1A3454 100%);
+}
+
+.security-gradient-bg {
+  background: linear-gradient(135deg, #00A4EF 0%, #8BE9FD 100%);
+}
+
+.stripe-dashboard-bg {
+  background: linear-gradient(180deg, #F6F9FC 0%, #FFFFFF 100%);
+}
+
+.enterprise-gradient-bg {
+  background: linear-gradient(135deg, #0A2540 0%, #425466 100%);
+}
+
+/* Advanced Stripe animations */
+.animate-stripe-fade-up {
+  animation: stripeFadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.animate-stripe-fade-in {
+  animation: stripeFadeIn 0.5s ease-out;
+}
+
+.animate-stripe-scale {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.animate-stripe-scale:hover {
+  transform: scale(1.03);
+  box-shadow: 0px 8px 30px rgba(0, 0, 0, 0.12);
+}
+
+@keyframes stripeFadeUp {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes stripeFadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Stripe animated gradient background */
+.stripe-animated-gradient {
+  background: linear-gradient(-45deg, #0A2540, #3D9CD2, #00D4FF, #7A73FF);
+  background-size: 400% 400%;
+  animation: gradient-flow 15s ease infinite;
+}
+
+/* Page background gradients */
+.bg-page-gradient-blue {
+  background: linear-gradient(180deg, #F6F9FC 0%, #FFFFFF 100%);
+}
+
+.bg-page-gradient-dark {
+  background: linear-gradient(135deg, #0A2540 0%, #1A3454 100%);
+}
+
+.bg-page-gradient-light {
+  background: linear-gradient(180deg, #F6F9FC 0%, #EFF5FA 100%);
+}
+
+.bg-page-gradient-cyan {
+  background: linear-gradient(135deg, #F6F9FC 0%, #E7F5FF 100%);
+}
+
+.bg-page-dashboard {
+  background-color: #F6F9FC;
+  background-image: radial-gradient(#E6EBEF 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.bg-page-auth {
+  background: linear-gradient(180deg, #0A2540 0%, #213958 100%);
+}
+
+@keyframes gradient-flow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Stripe form elements */
+.stripe-form-group {
+  @apply mb-4;
+}
+
+.stripe-form-label {
+  @apply block text-sm font-medium text-stripe-slate mb-2;
+}
+
+.stripe-form-hint {
+  @apply text-xs text-stripe-text-muted mt-1;
+}
+
+.stripe-select {
+  @apply appearance-none bg-white border border-stripe-border rounded-md py-3 px-4 w-full leading-tight focus:outline-none focus:ring-2 focus:ring-stripe-blue focus:border-transparent transition-all duration-200 shadow-sm hover:shadow-md;
+}
+
+/* Advanced Stripe animations */
+.stripe-hover-lift {
+  @apply transition-all duration-300;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+}
+
+.stripe-hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+}
+
+.stripe-btn-arrow {
+  @apply inline-flex items-center;
+}
+
+.stripe-btn-arrow svg {
+  @apply ml-2 transition-transform duration-300;
+}
+
+.stripe-btn-arrow:hover svg {
+  transform: translateX(3px);
+}
+
+/* Gradient text effect */
+.text-gradient {
+  @apply bg-clip-text text-transparent;
+  background-image: linear-gradient(to right, #1EAEDB, #1A3454);
+}
+
+.text-gradient-blue {
+  @apply bg-clip-text text-transparent;
+  background-image: linear-gradient(to right, #1EAEDB, #00D4FF);
+}
+
+/* Stripe code highlights */
+.stripe-code-highlight {
+  @apply bg-stripe-blue/10 text-stripe-blue px-1.5 py-0.5 rounded font-mono text-sm;
+}
+
+/* Hover effect for cards */
+.stripe-hover-border:hover {
+  border-color: #3D9CD2;
+}
+
+/* Stripe button with arrow animations */
+.btn-with-arrow {
+  @apply inline-flex items-center gap-2;
+}
+
+.btn-with-arrow svg {
+  @apply transition-transform duration-300;
+}
+
+.btn-with-arrow:hover svg {
+  transform: translate-x-0.5;
+}
+
+/* Stripe dots pattern */
+.stripe-dots-pattern {
+  background-image: radial-gradient(#3D9CD2 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+
+/* Transparent glass effect for cards on gradient backgrounds */
+.stripe-glass {
+  @apply backdrop-blur-lg bg-white/10 border border-white/20 rounded-xl transition-all duration-300;
+}
+
+.stripe-glass:hover {
+  @apply bg-white/20;
+}
+
+/* Utility for making dividing lines */
+.stripe-divider {
+  @apply h-px w-full bg-stripe-border my-6;
+}
+
+/* Animation for transitioning background colors */
+.bg-transition {
+  @apply transition-colors duration-300;
+}
+
+/* Stripe loading animation */
+.stripe-loading {
+  @apply relative overflow-hidden;
+}
+
+.stripe-loading::after {
+  content: "";
+  @apply absolute inset-0 -translate-x-full;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.4) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  animation: shimmer 1.5s infinite;
+}
+
+/* Better form focus states */
+.stripe-form-focus {
+  @apply focus:ring-2 focus:ring-stripe-blue focus:border-transparent transition-all duration-200;
+}
