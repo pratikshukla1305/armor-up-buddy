@@ -47,7 +47,8 @@ import OfficerKyc from "./pages/OfficerKyc";
 import OfficerAdvisories from "./pages/OfficerAdvisories";
 import OfficerCaseMap from "./pages/OfficerCaseMap";
 import DiscussionForum from "./pages/DiscussionForum";
-import SelfReportForm from './components/SelfReportForm'; // Ensure this import exists
+import SelfReportForm from './components/SelfReportForm';
+import WantedIndividualsPage from './pages/WantedIndividualsPage';
 
 const App = () => {
   const [queryClient] = useState(() => new QueryClient());
@@ -135,7 +136,8 @@ const App = () => {
                 <Route path="/my-reports" element={<MyReports />} />
                 <Route path="/notifications" element={<Notifications />} />
                 <Route path="/forum" element={<DiscussionForum />} />
-                <Route path="/self-report" element={<SelfReportForm />} /> {/* Add this route */}
+                <Route path="/self-report" element={<SelfReportForm />} />
+                <Route path="/wanted-individuals" element={<WantedIndividualsPage />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
