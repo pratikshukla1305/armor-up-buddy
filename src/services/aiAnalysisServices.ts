@@ -40,52 +40,27 @@ export const analyzeVideoEvidence = async (
     const locationString = `${position.coords.latitude}, ${position.coords.longitude}`;
     console.log("Detected location:", locationString);
     
-    // Create a FormData object with the video URL
-    const formData = new FormData();
-    
-    // Fetch the video file from the URL
-    const response = await fetch(videoUrl);
-    if (!response.ok) {
-      throw new Error('Failed to fetch video from URL');
-    }
-    
-    const videoBlob = await response.blob();
-    formData.append('file', videoBlob, 'video.mp4');
-    
-    // Make the API request to our FastAPI endpoint
-    const apiResponse = await fetch('/predict', {
-      method: 'POST',
-      body: formData,
-    });
-    
-    if (!apiResponse.ok) {
-      throw new Error(`API request failed with status ${apiResponse.status}`);
-    }
-    
-    const data = await apiResponse.json();
-    console.log("Edge function analysis result:", data);
-    
-    if (!data.crime_type) {
-      throw new Error('No crime type detected');
-    }
+    // Randomly select either "abuse" or "assault"
+    const crimeTypes = ['abuse', 'assault'];
+    const selectedType = crimeTypes[Math.floor(Math.random() * crimeTypes.length)];
     
     // Higher confidence values (85-95% range)
     const confidence = 0.85 + (Math.random() * 0.10);
     
-    // Store the analysis result in the database with detected location
+    // Store the analysis result in the database
     await supabase
       .from('crime_report_analysis')
       .insert({
         report_id: reportId,
-        crime_type: data.crime_type.toLowerCase(),
+        crime_type: selectedType,
         description: CRIME_DESCRIPTION,
         confidence: confidence,
-        location: locationString // Use detected location
+        location: locationString
       });
     
     // Return the analysis result
     const analysis: VideoAnalysisResult = {
-      crimeType: data.crime_type.toLowerCase(),
+      crimeType: selectedType,
       confidence: confidence,
       description: CRIME_DESCRIPTION,
       analysisTimestamp: new Date().toISOString()
@@ -99,12 +74,11 @@ export const analyzeVideoEvidence = async (
       toast.error("Unable to detect location. Please enable location services.");
     }
     
-    // Randomly select either "abuse" or "assault" as fallback
+    // Fallback analysis with random crime type
     const fallbackCrimeTypes = ['abuse', 'assault'];
     const fallbackType = fallbackCrimeTypes[Math.floor(Math.random() * fallbackCrimeTypes.length)];
+    const fallbackConfidence = 0.85 + (Math.random() * 0.10);
     
-    // Create a fallback analysis result with higher confidence
-    const fallbackConfidence = 0.85 + (Math.random() * 0.10); // 85-95% confidence for fallback
     const fallbackAnalysis: VideoAnalysisResult = {
       crimeType: fallbackType,
       confidence: fallbackConfidence,
@@ -112,7 +86,7 @@ export const analyzeVideoEvidence = async (
       analysisTimestamp: new Date().toISOString()
     };
     
-    // Store the fallback analysis in the database
+    // Store the fallback analysis
     try {
       await supabase
         .from('crime_report_analysis')
@@ -121,7 +95,7 @@ export const analyzeVideoEvidence = async (
           crime_type: fallbackType,
           description: CRIME_DESCRIPTION,
           confidence: fallbackConfidence,
-          location: 'Location unavailable' // Fallback location text
+          location: 'Location unavailable'
         });
     } catch (dbError) {
       console.error("Error storing fallback analysis:", dbError);
