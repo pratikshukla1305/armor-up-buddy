@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import FaceVerification from './FaceVerification';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '@/components/ui/card';
 import { getUserKycStatus } from '@/services/userServices';
 import SOSButton from '../sos/SOSButton';
 
@@ -27,24 +27,35 @@ const SecureAuthFlow: React.FC<SecureAuthFlowProps> = ({ children }) => {
         setIsLoading(true);
         
         if (!user || !user.email) {
-          // If no user is logged in, no need for face verification
+          // If no user is logged in, redirect to login
+          toast.error("Please sign in to continue");
+          navigate('/signin');
           setIsLoading(false);
           return;
         }
         
+        console.log("Checking KYC status for user:", user.email);
+        
         // Check if the user has completed KYC verification
         const kycData = await getUserKycStatus(user.email);
+        console.log("KYC data received:", kycData);
         setKycStatus(kycData);
         
         if (kycData?.status === 'Approved' && kycData?.selfie) {
+          console.log("KYC approved with selfie:", kycData.selfie);
           setSelfieFaceUrl(kycData.selfie);
           
           // Check local storage for a flag that indicates we already verified this session
           const hasVerified = localStorage.getItem(`face_verified_${user.id}`);
           
           if (!hasVerified) {
+            console.log("Face verification needed");
             setNeedsFaceVerification(true);
+          } else {
+            console.log("Face already verified this session");
           }
+        } else {
+          console.log("KYC not approved or missing selfie");
         }
         
         setIsLoading(false);
@@ -56,7 +67,7 @@ const SecureAuthFlow: React.FC<SecureAuthFlowProps> = ({ children }) => {
     };
     
     checkUserStatus();
-  }, [user]);
+  }, [user, navigate]);
   
   const handleVerificationSuccess = () => {
     if (user) {
@@ -92,41 +103,46 @@ const SecureAuthFlow: React.FC<SecureAuthFlowProps> = ({ children }) => {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
-        <p className="ml-3">Checking authentication status...</p>
+        <p className="ml-3 text-lg">Checking authentication status...</p>
         <SOSButton onClick={handleSOS} variant="floating" size="lg" />
       </div>
     );
   }
   
   if (!user) {
-    // User is not logged in, no need for face verification
-    return <>{children}</>;
+    // Redirect to login if not authenticated
+    navigate('/signin');
+    return null;
   }
   
   if (kycStatus?.status !== 'Approved') {
     // KYC not completed or not approved, prompt to complete it
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <Card className="max-w-md w-full p-6">
-          <h2 className="text-2xl font-bold mb-4">Verification Required</h2>
-          <p className="mb-6 text-gray-600">
-            You need to complete the e-KYC verification process before accessing this feature.
-          </p>
-          <Button 
-            className="w-full mb-4" 
-            onClick={handleRedirectToKyc}
-          >
-            Complete E-KYC Verification
-          </Button>
-          <Button 
-            variant="outline" 
-            className="w-full" 
-            onClick={() => navigate('/')}
-          >
-            Return to Home
-          </Button>
-          <SOSButton onClick={handleSOS} variant="floating" size="lg" />
+        <Card className="max-w-md w-full">
+          <CardHeader>
+            <CardTitle className="text-2xl font-bold">Verification Required</CardTitle>
+            <CardDescription className="text-lg">
+              You need to complete the e-KYC verification process before accessing this feature.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Button 
+              className="w-full text-lg py-6" 
+              onClick={handleRedirectToKyc}
+            >
+              Complete E-KYC Verification
+            </Button>
+            <Button 
+              variant="outline" 
+              className="w-full" 
+              onClick={() => navigate('/')}
+            >
+              Return to Home
+            </Button>
+          </CardContent>
         </Card>
+        <SOSButton onClick={handleSOS} variant="floating" size="lg" />
       </div>
     );
   }
@@ -134,17 +150,20 @@ const SecureAuthFlow: React.FC<SecureAuthFlowProps> = ({ children }) => {
   if (needsFaceVerification) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <Card className="max-w-md w-full p-6">
-          <h2 className="text-2xl font-bold mb-2">Identity Verification</h2>
-          <p className="mb-6 text-gray-600">
-            Please verify your identity using face recognition.
-          </p>
-          
-          <FaceVerification
-            onSuccess={handleVerificationSuccess}
-            onCancel={handleSkipVerification}
-            expectedFaceUrl={selfieFaceUrl}
-          />
+        <Card className="max-w-md w-full">
+          <CardHeader>
+            <CardTitle className="text-2xl font-bold mb-2">Identity Verification</CardTitle>
+            <CardDescription className="text-lg">
+              Please verify your identity using face recognition.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <FaceVerification
+              onSuccess={handleVerificationSuccess}
+              onCancel={handleSkipVerification}
+              expectedFaceUrl={selfieFaceUrl}
+            />
+          </CardContent>
         </Card>
       </div>
     );
