@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Tabs, 
@@ -14,6 +14,9 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { toast } from '@/hooks/use-toast';
 import { getUserKycStatus } from '@/services/userServices';
+import { useAuth } from '@/contexts/AuthContext';
+import SOSButton from '@/components/sos/SOSButton';
+import { submitSOSAlert } from '@/services/userServices';
 
 type KycData = {
   fullName: string;
@@ -28,6 +31,7 @@ type KycData = {
 
 const EKycPage = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState<string>("form");
   const [kycData, setKycData] = useState<KycData>({
     fullName: "",
@@ -47,8 +51,26 @@ const EKycPage = () => {
     selfie?: File;
   }>({});
 
+  // Get pre-filled data from session storage (after signup)
+  useEffect(() => {
+    const storedName = sessionStorage.getItem('new_user_fullname');
+    const storedEmail = sessionStorage.getItem('new_user_email');
+    
+    if (storedName || storedEmail || (user && user.email)) {
+      setKycData(prevData => ({
+        ...prevData,
+        fullName: storedName || prevData.fullName,
+        email: storedEmail || user?.email || prevData.email
+      }));
+      
+      // Clear the session storage after using it
+      sessionStorage.removeItem('new_user_fullname');
+      sessionStorage.removeItem('new_user_email');
+    }
+  }, [user]);
+
   // Generate a demo user ID if we don't have one from auth
-  const userId = "user-" + Math.floor(Math.random() * 1000).toString();
+  const userId = user?.id || ("user-" + Math.floor(Math.random() * 1000).toString());
 
   useEffect(() => {
     // Check if user has existing verification
@@ -133,6 +155,55 @@ const EKycPage = () => {
     });
   };
 
+  const handleSOSAlert = async () => {
+    try {
+      // Try to get location
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const locationStr = `Lat: ${position.coords.latitude}, Long: ${position.coords.longitude}`;
+          await submitSOSAlert({
+            reported_by: user?.id,
+            location: locationStr,
+            status: "New",
+            message: "Emergency triggered from KYC verification page",
+            reported_time: new Date().toISOString(),
+            emergency_type: "Urgent",
+            contact_requested: true
+          });
+          
+          toast({
+            title: "SOS Alert Sent",
+            description: "Emergency services have been notified."
+          });
+        },
+        async (error) => {
+          console.error("Error getting location:", error);
+          await submitSOSAlert({
+            reported_by: user?.id,
+            location: "Unknown location - KYC page",
+            status: "New",
+            message: "Emergency triggered from KYC verification page",
+            reported_time: new Date().toISOString(),
+            emergency_type: "Urgent",
+            contact_requested: true
+          });
+          
+          toast({
+            title: "SOS Alert Sent",
+            description: "Emergency services have been notified."
+          });
+        }
+      );
+    } catch (error) {
+      console.error("Error sending SOS alert:", error);
+      toast({
+        title: "Error Sending SOS",
+        description: "Failed to send SOS alert. Please try again or call emergency services directly.",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />
@@ -144,7 +215,7 @@ const EKycPage = () => {
               Electronic Know Your Customer (e-KYC)
             </h1>
             <p className="text-gray-600 mb-8">
-              Complete the verification process to access all features of Midshield.
+              Complete the verification process to access all features of the Shield platform.
             </p>
             
             <Tabs value={currentStep} onValueChange={setCurrentStep} className="w-full">
@@ -204,6 +275,13 @@ const EKycPage = () => {
       </main>
       
       <Footer />
+      
+      {/* Floating SOS Button */}
+      <SOSButton 
+        onClick={handleSOSAlert} 
+        variant="floating" 
+        size="lg" 
+      />
     </div>
   );
 };

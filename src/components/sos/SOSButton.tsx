@@ -8,7 +8,7 @@ interface SOSButtonProps {
   onClick: () => void;
   className?: string;
   size?: 'sm' | 'default' | 'lg';
-  variant?: 'default' | 'outline' | 'subtle';
+  variant?: 'default' | 'outline' | 'subtle' | 'floating';
 }
 
 const SOSButton = ({ 
@@ -26,7 +26,8 @@ const SOSButton = ({
   const variantClasses = {
     'default': 'bg-red-600 hover:bg-red-700 text-white',
     'outline': 'border-2 border-red-600 text-red-600 hover:bg-red-50',
-    'subtle': 'bg-red-100 text-red-700 hover:bg-red-200'
+    'subtle': 'bg-red-100 text-red-700 hover:bg-red-200',
+    'floating': 'bg-red-600 hover:bg-red-700 text-white fixed bottom-6 right-6 rounded-full p-4 shadow-lg z-50'
   };
   
   return (
@@ -35,13 +36,15 @@ const SOSButton = ({
       className={cn(
         "font-bold rounded-md shadow-lg flex items-center justify-center animate-sos-pulse",
         sizeClasses[size],
-        variantClasses[variant],
+        variantClasses[variant === 'floating' ? 'floating' : variant],
+        variant === 'floating' ? 'animate-bounce' : 'animate-sos-pulse',
         className
       )}
       type="button"
+      aria-label="SOS Emergency Button"
     >
       <AlertTriangle className={cn("h-4 w-4", size === 'lg' ? 'h-5 w-5' : size === 'sm' ? 'h-3 w-3' : 'h-4 w-4')} />
-      <span className="font-bold">SOS</span>
+      <span className={cn("font-bold", variant === 'floating' ? 'sr-only' : '')}>SOS</span>
     </Button>
   );
 };

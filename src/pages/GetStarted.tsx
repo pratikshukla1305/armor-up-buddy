@@ -7,6 +7,8 @@ import AuthButton from '@/components/AuthButton';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import SOSButton from '@/components/sos/SOSButton';
+import { submitSOSAlert } from '@/services/userServices';
 
 const GetStarted = () => {
   const [fullName, setFullName] = useState('');
@@ -25,6 +27,44 @@ const GetStarted = () => {
       navigate('/dashboard');
     }
   }, [user, navigate]);
+
+  const handleSOS = async () => {
+    try {
+      toast.info("SOS alert sent! Help is on the way.", {
+        duration: 5000,
+      });
+      
+      // Try to get location
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const locationStr = `Lat: ${position.coords.latitude}, Long: ${position.coords.longitude}`;
+          submitSOSAlert({
+            location: locationStr,
+            status: "New",
+            message: "Emergency triggered from signup page",
+            reported_time: new Date().toISOString(),
+            emergency_type: "Urgent",
+            contact_requested: true
+          });
+        },
+        (error) => {
+          console.error("Error getting location:", error);
+          submitSOSAlert({
+            location: "Unknown location - signup page",
+            status: "New",
+            message: "Emergency triggered from signup page",
+            reported_time: new Date().toISOString(),
+            emergency_type: "Urgent",
+            contact_requested: true
+          });
+        }
+      );
+      
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('Error sending SOS alert:', error);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,9 +95,15 @@ const GetStarted = () => {
         console.error("Sign up error:", error.message);
         toast.error(`Sign up error: ${error.message}`);
       } else {
-        console.log("Sign up successful, redirecting to sign in");
-        toast.success("Account created successfully! Please verify your email (if required) and sign in.");
-        setTimeout(() => navigate('/signin'), 500);
+        console.log("Sign up successful, redirecting to e-KYC");
+        toast.success("Account created successfully! Please verify your email (if required) and complete e-KYC.");
+        
+        // Store signup info in session storage to pre-fill KYC form
+        sessionStorage.setItem('new_user_fullname', fullName);
+        sessionStorage.setItem('new_user_email', email);
+        
+        // Redirect to E-KYC page instead of signin page
+        setTimeout(() => navigate('/e-kyc'), 500);
       }
     } catch (err: any) {
       console.error("Unexpected error during sign up:", err);
@@ -264,6 +310,13 @@ const GetStarted = () => {
       </section>
       
       <Footer />
+      
+      {/* Add floating SOS button */}
+      <SOSButton 
+        onClick={handleSOS} 
+        variant="floating" 
+        size="lg" 
+      />
     </div>
   );
 };
