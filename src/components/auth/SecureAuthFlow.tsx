@@ -27,7 +27,7 @@ const SecureAuthFlow: React.FC<SecureAuthFlowProps> = ({ children }) => {
         setIsLoading(true);
         
         if (!user || !user.email) {
-          // If no user is logged in, redirect to login
+          console.log("No user found, redirecting to signin");
           toast.error("Please sign in to continue");
           navigate('/signin');
           setIsLoading(false);
@@ -41,21 +41,25 @@ const SecureAuthFlow: React.FC<SecureAuthFlowProps> = ({ children }) => {
         console.log("KYC data received:", kycData);
         setKycStatus(kycData);
         
-        if (kycData?.status === 'Approved' && kycData?.selfie) {
-          console.log("KYC approved with selfie:", kycData.selfie);
-          setSelfieFaceUrl(kycData.selfie);
+        if (kycData?.status === 'Approved') {
+          console.log("KYC approved, checking for selfie:", kycData.selfie);
+          
+          // Set selfie URL if available
+          if (kycData.selfie) {
+            setSelfieFaceUrl(kycData.selfie);
+          }
           
           // Check local storage for a flag that indicates we already verified this session
           const hasVerified = localStorage.getItem(`face_verified_${user.id}`);
           
           if (!hasVerified) {
-            console.log("Face verification needed");
+            console.log("Face verification needed - starting verification flow");
             setNeedsFaceVerification(true);
           } else {
             console.log("Face already verified this session");
           }
         } else {
-          console.log("KYC not approved or missing selfie");
+          console.log("KYC not approved, status:", kycData?.status);
         }
         
         setIsLoading(false);
@@ -71,6 +75,7 @@ const SecureAuthFlow: React.FC<SecureAuthFlowProps> = ({ children }) => {
   
   const handleVerificationSuccess = () => {
     if (user) {
+      console.log("Face verification successful for user:", user.id);
       // Set flag in local storage to remember verification for this session
       localStorage.setItem(`face_verified_${user.id}`, 'true');
       setNeedsFaceVerification(false);
@@ -79,7 +84,6 @@ const SecureAuthFlow: React.FC<SecureAuthFlowProps> = ({ children }) => {
   };
   
   const handleSOS = async () => {
-    // Implement SOS functionality
     try {
       toast.info("SOS alert sent! Help is on the way.", {
         duration: 5000,
@@ -91,6 +95,7 @@ const SecureAuthFlow: React.FC<SecureAuthFlowProps> = ({ children }) => {
   };
   
   const handleSkipVerification = () => {
+    console.log("User chose to skip verification");
     toast.warning('Skipping verification for this session.', { duration: 3000 });
     setNeedsFaceVerification(false);
   };
@@ -110,13 +115,11 @@ const SecureAuthFlow: React.FC<SecureAuthFlowProps> = ({ children }) => {
   }
   
   if (!user) {
-    // Redirect to login if not authenticated
     navigate('/signin');
     return null;
   }
   
   if (kycStatus?.status !== 'Approved') {
-    // KYC not completed or not approved, prompt to complete it
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
         <Card className="max-w-md w-full">
@@ -148,13 +151,14 @@ const SecureAuthFlow: React.FC<SecureAuthFlowProps> = ({ children }) => {
   }
   
   if (needsFaceVerification) {
+    console.log("Rendering face verification with selfie URL:", selfieFaceUrl);
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
         <Card className="max-w-md w-full">
           <CardHeader>
             <CardTitle className="text-2xl font-bold mb-2">Identity Verification</CardTitle>
             <CardDescription className="text-lg">
-              Please verify your identity using face recognition.
+              Please verify your identity using face recognition to continue.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -162,6 +166,7 @@ const SecureAuthFlow: React.FC<SecureAuthFlowProps> = ({ children }) => {
               onSuccess={handleVerificationSuccess}
               onCancel={handleSkipVerification}
               expectedFaceUrl={selfieFaceUrl}
+              showSOSButton={false}
             />
           </CardContent>
         </Card>

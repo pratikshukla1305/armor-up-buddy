@@ -45,7 +45,6 @@ const FaceVerificationControls: React.FC<FaceVerificationControlsProps> = ({
         <Button 
           className="w-full bg-green-600 hover:bg-green-700 text-lg py-6" 
           onClick={onVerifyFace}
-          disabled={!expectedFaceEmbedding}
         >
           <ShieldCheck className="mr-2 h-5 w-5" /> Verify Identity
         </Button>
@@ -62,7 +61,7 @@ const FaceVerificationControls: React.FC<FaceVerificationControlsProps> = ({
       {/* Status message with clear visibility */}
       {verificationMessage && !errorMessage && (
         <Alert variant="default" className="bg-blue-50 border-blue-200">
-          <AlertTitle className="text-blue-800">Authentication Status</AlertTitle>
+          <AlertTitle className="text-blue-800">Status</AlertTitle>
           <AlertDescription className="text-blue-700">
             {verificationMessage}
           </AlertDescription>

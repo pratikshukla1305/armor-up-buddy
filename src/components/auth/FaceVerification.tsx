@@ -68,7 +68,7 @@ const FaceVerification: React.FC<FaceVerificationProps> = ({
     stopMonitoring
   } = useFaceVerification();
 
-  // Load expected face when component mounts
+  // Load expected face when models are ready
   useEffect(() => {
     console.log('FaceVerification component mounted');
     console.log('Expected face URL:', expectedFaceUrl);
@@ -77,11 +77,11 @@ const FaceVerification: React.FC<FaceVerificationProps> = ({
     if (expectedFaceUrl && isModelLoaded) {
       console.log('Loading expected face...');
       loadExpectedFace(expectedFaceUrl);
-    } else if (!expectedFaceUrl) {
-      console.warn('No reference face URL provided for verification');
-      setVerificationMessage('Reference face not available. Camera will start for live verification only.');
+    } else if (!expectedFaceUrl && isModelLoaded) {
+      console.log('No reference face URL provided');
+      setVerificationMessage('No reference face available. Please start the camera for live verification.');
     }
-  }, [expectedFaceUrl, isModelLoaded]);
+  }, [expectedFaceUrl, isModelLoaded, loadExpectedFace, setVerificationMessage]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -90,19 +90,22 @@ const FaceVerification: React.FC<FaceVerificationProps> = ({
       stopStream();
       stopMonitoring();
     };
-  }, []);
+  }, [stopStream, stopMonitoring]);
 
   // Start camera handler
   const handleStartCamera = async () => {
     console.log('Start camera button clicked');
+    setErrorMessage('');
+    setVerificationMessage('Starting camera...');
+    
     const result = await startCamera(videoRef);
     if (!result.success && result.error) {
       console.error('Failed to start camera:', result.error);
       setErrorMessage(result.error);
+      setVerificationMessage('');
     } else {
       console.log('Camera started successfully');
-      setErrorMessage('');
-      setVerificationMessage('Camera started. Please position your face in the frame.');
+      setVerificationMessage('Camera started successfully. Position your face in the frame.');
     }
   };
 
@@ -178,18 +181,7 @@ const FaceVerification: React.FC<FaceVerificationProps> = ({
   const verifyFace = async () => {
     if (!videoRef.current) {
       console.error('Video element not available for verification');
-      setVerificationMessage('Camera not available. Please start the camera first.');
-      return;
-    }
-    
-    if (!expectedFaceEmbedding) {
-      console.warn('No expected face embedding available');
-      // If no reference face, proceed with monitoring only
-      setVerificationMessage('No reference face available. Starting live monitoring...');
-      startMonitoringFace();
-      setTimeout(() => {
-        onSuccess();
-      }, 1000);
+      toast.error('Camera not available. Please start the camera first.');
       return;
     }
     
@@ -202,23 +194,38 @@ const FaceVerification: React.FC<FaceVerificationProps> = ({
       
       if (detections) {
         console.log('Face detected during verification');
-        const isMatch = compareFaces(detections.descriptor);
         
-        if (isMatch) {
-          console.log('Face verification successful!');
-          setVerificationMessage('Verification successful! Continuing to monitor for security.');
-          toast.success('Identity verified successfully!');
+        if (expectedFaceEmbedding) {
+          // If we have a reference face, verify against it
+          const isMatch = compareFaces(detections.descriptor);
+          
+          if (isMatch) {
+            console.log('Face verification successful!');
+            setVerificationMessage('Verification successful! Continuing to monitor for security.');
+            toast.success('Identity verified successfully!');
+            
+            startMonitoringFace();
+            
+            setTimeout(() => {
+              onSuccess();
+            }, 1000);
+          } else {
+            console.log('Face verification failed - no match');
+            setVerificationMessage('Verification failed. Face does not match the registered face.');
+            toast.error('Verification failed. Face does not match the registered face.');
+            setIsVerifying(false);
+          }
+        } else {
+          // If no reference face, just proceed with live monitoring
+          console.log('No reference face available, proceeding with live monitoring');
+          setVerificationMessage('Face detected. Starting live monitoring...');
+          toast.success('Face detected successfully!');
           
           startMonitoringFace();
           
           setTimeout(() => {
             onSuccess();
           }, 1000);
-        } else {
-          console.log('Face verification failed - no match');
-          setVerificationMessage('Verification failed. Face does not match the registered face.');
-          toast.error('Verification failed. Face does not match the registered face.');
-          setIsVerifying(false);
         }
       } else {
         console.log('No face detected during verification');
@@ -229,6 +236,7 @@ const FaceVerification: React.FC<FaceVerificationProps> = ({
     } catch (error) {
       console.error('Error verifying face:', error);
       setVerificationMessage('An error occurred during verification. Please try again.');
+      toast.error('An error occurred during verification. Please try again.');
       setIsVerifying(false);
     }
   };
