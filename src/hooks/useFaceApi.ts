@@ -11,16 +11,27 @@ export const useFaceApi = () => {
   useEffect(() => {
     const loadModels = async () => {
       try {
+        console.log('Starting to load face-api models...');
         setVerificationMessage('Loading facial recognition models...');
         
-        if (!faceapi.nets.ssdMobilenetv1.isLoaded) {
-          await Promise.all([
-            faceapi.nets.ssdMobilenetv1.loadFromUri('/models'),
-            faceapi.nets.faceRecognitionNet.loadFromUri('/models'),
-            faceapi.nets.faceLandmark68Net.loadFromUri('/models')
-          ]);
+        // Check if models are already loaded
+        if (faceapi.nets.ssdMobilenetv1.isLoaded && 
+            faceapi.nets.faceRecognitionNet.isLoaded && 
+            faceapi.nets.faceLandmark68Net.isLoaded) {
+          console.log('Models already loaded');
+          setIsModelLoaded(true);
+          setVerificationMessage('Facial recognition models loaded successfully. Please start camera.');
+          return;
         }
         
+        console.log('Loading models from /models directory...');
+        await Promise.all([
+          faceapi.nets.ssdMobilenetv1.loadFromUri('/models'),
+          faceapi.nets.faceRecognitionNet.loadFromUri('/models'),
+          faceapi.nets.faceLandmark68Net.loadFromUri('/models')
+        ]);
+        
+        console.log('All face-api models loaded successfully');
         setIsModelLoaded(true);
         setVerificationMessage('Facial recognition models loaded successfully. Please start camera.');
       } catch (error) {
@@ -34,19 +45,23 @@ export const useFaceApi = () => {
 
   const loadExpectedFace = async (faceUrl: string) => {
     try {
+      console.log('Loading reference face from URL:', faceUrl);
       setVerificationMessage('Loading reference face...');
       
       const img = await faceapi.fetchImage(faceUrl);
+      console.log('Image loaded, detecting face...');
+      
       const detection = await faceapi.detectSingleFace(img)
         .withFaceLandmarks()
         .withFaceDescriptor();
       
       if (detection) {
+        console.log('Face detected in reference image');
         setExpectedFaceEmbedding(detection.descriptor);
         setVerificationMessage('Reference face loaded successfully. Ready to verify.');
       } else {
-        setErrorMessage('No face detected in the reference image. Please update your profile with a clear face image.');
         console.error('No face detected in reference image');
+        setErrorMessage('No face detected in the reference image. Please update your profile with a clear face image.');
       }
     } catch (error) {
       console.error('Error loading reference face:', error);
@@ -55,17 +70,37 @@ export const useFaceApi = () => {
   };
 
   const detectFace = async (video: HTMLVideoElement) => {
-    return await faceapi.detectSingleFace(video)
-      .withFaceLandmarks()
-      .withFaceDescriptor();
+    try {
+      console.log('Detecting face in video stream...');
+      const detection = await faceapi.detectSingleFace(video)
+        .withFaceLandmarks()
+        .withFaceDescriptor();
+      
+      if (detection) {
+        console.log('Face detected successfully');
+      } else {
+        console.log('No face detected in current frame');
+      }
+      
+      return detection;
+    } catch (error) {
+      console.error('Error detecting face:', error);
+      return null;
+    }
   };
 
   const compareFaces = (descriptor: Float32Array) => {
-    if (!expectedFaceEmbedding) return null;
+    if (!expectedFaceEmbedding) {
+      console.log('No expected face embedding available for comparison');
+      return null;
+    }
     
     const distance = faceapi.euclideanDistance(expectedFaceEmbedding, descriptor);
     const threshold = 0.5;
-    return distance <= threshold;
+    const isMatch = distance <= threshold;
+    
+    console.log(`Face comparison - Distance: ${distance}, Threshold: ${threshold}, Match: ${isMatch}`);
+    return isMatch;
   };
 
   return {

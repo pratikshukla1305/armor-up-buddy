@@ -26,6 +26,11 @@ const FaceVerificationVideo: React.FC<FaceVerificationVideoProps> = ({
   onCancel,
   onCameraReady
 }) => {
+  const handleVideoLoadedMetadata = () => {
+    console.log('Video metadata loaded in component');
+    onCameraReady();
+  };
+
   return (
     <div className="relative bg-black rounded-lg overflow-hidden aspect-video border-4 border-blue-500 shadow-lg">
       <video 
@@ -33,7 +38,14 @@ const FaceVerificationVideo: React.FC<FaceVerificationVideoProps> = ({
         className="w-full h-full object-cover" 
         autoPlay 
         playsInline 
-        onLoadedMetadata={onCameraReady}
+        muted
+        onLoadedMetadata={handleVideoLoadedMetadata}
+        onError={(e) => {
+          console.error('Video error:', e);
+        }}
+        onCanPlay={() => {
+          console.log('Video can play');
+        }}
       />
       <canvas 
         ref={canvasRef} 
@@ -41,11 +53,16 @@ const FaceVerificationVideo: React.FC<FaceVerificationVideoProps> = ({
       />
       
       {/* Status overlay */}
-      {(!isModelLoaded || !isCameraReady || isVerifying) && (
+      {(!isModelLoaded || !isCameraReady || isVerifying) && !errorMessage && (
         <div className="absolute inset-0 bg-black bg-opacity-70 flex items-center justify-center">
           <div className="text-white text-center p-4">
             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white mx-auto mb-3"></div>
-            <p className="text-lg font-medium">{verificationMessage || 'Preparing facial verification...'}</p>
+            <p className="text-lg font-medium">
+              {!isModelLoaded ? 'Loading face recognition models...' : 
+               !isCameraReady ? 'Starting camera...' :
+               isVerifying ? 'Verifying your identity...' :
+               verificationMessage || 'Preparing facial verification...'}
+            </p>
           </div>
         </div>
       )}
@@ -55,7 +72,7 @@ const FaceVerificationVideo: React.FC<FaceVerificationVideoProps> = ({
         <div className="absolute inset-0 bg-red-900 bg-opacity-80 flex items-center justify-center">
           <div className="text-white text-center p-4">
             <AlertTriangle className="h-8 w-8 mx-auto mb-2" />
-            <p className="text-lg font-medium">{errorMessage}</p>
+            <p className="text-lg font-medium mb-4">{errorMessage}</p>
             <Button 
               variant="outline" 
               className="mt-4 bg-transparent border-white text-white hover:bg-white hover:text-red-900"
