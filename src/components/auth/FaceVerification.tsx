@@ -198,15 +198,16 @@ const FaceVerification: React.FC<FaceVerificationProps> = ({
               ctx.strokeStyle = '#10b981'; // Green color
               ctx.lineWidth = 2;
               
-              const { _box: box } = resizedDetection.detection;
-              ctx.strokeRect(box._x, box._y, box._width, box._height);
+              // Use the public box property instead of private _box
+              const box = resizedDetection.detection.box;
+              ctx.strokeRect(box.x, box.y, box.width, box.height);
               
               // Add a label above the face box
               ctx.fillStyle = '#10b981';
-              ctx.fillRect(box._x, box._y - 25, 100, 25);
+              ctx.fillRect(box.x, box.y - 25, 100, 25);
               ctx.fillStyle = 'white';
               ctx.font = '16px Arial';
-              ctx.fillText('Detected', box._x + 5, box._y - 8);
+              ctx.fillText('Detected', box.x + 5, box.y - 8);
               
               // Draw landmarks
               faceapi.draw.drawFaceLandmarks(canvas, [resizedDetection]);
