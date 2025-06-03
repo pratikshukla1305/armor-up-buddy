@@ -106,10 +106,19 @@ const FaceVerification: React.FC<FaceVerificationProps> = ({
       setErrorMessage(result.error);
       setVerificationMessage('');
     } else {
-      console.log('Camera started successfully, updating state');
-      setVerificationMessage('Camera started successfully. Position your face in the frame and click "Verify Identity".');
+      console.log('Camera started successfully');
+      setVerificationMessage('Camera is ready. Click "Verify Identity" to proceed.');
     }
   };
+
+  // Camera ready callback
+  const handleCameraReady = useCallback(() => {
+    console.log('Camera ready callback triggered - video is now streaming');
+    if (!isCameraReady) {
+      setIsCameraReady(true);
+      setVerificationMessage('Camera is ready. Click "Verify Identity" to proceed.');
+    }
+  }, [isCameraReady, setIsCameraReady, setVerificationMessage]);
 
   // Retry model loading
   const handleRetryModels = useCallback(() => {
@@ -300,11 +309,7 @@ const FaceVerification: React.FC<FaceVerificationProps> = ({
           verificationMessage={verificationMessage}
           errorMessage={errorMessage}
           onCancel={onCancel}
-          onCameraReady={() => {
-            console.log('Camera ready callback triggered from video component');
-            setIsCameraReady(true);
-            setVerificationMessage('Camera is ready. Click "Verify Identity" to proceed.');
-          }}
+          onCameraReady={handleCameraReady}
         />
         
         <FaceVerificationControls

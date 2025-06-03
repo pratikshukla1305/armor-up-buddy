@@ -14,12 +14,13 @@ export const useCamera = () => {
     }
 
     try {
-      console.log('Starting camera...');
+      console.log('Starting camera initialization...');
       isInitializingRef.current = true;
       
       if (streamRef.current) {
         console.log('Stopping existing stream before starting new one');
-        stopStream();
+        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
       }
       
       // Check if browser supports getUserMedia
@@ -38,59 +39,69 @@ export const useCamera = () => {
       
       console.log('Requesting camera access with constraints:', constraints);
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      console.log('Camera access granted, stream obtained:', stream);
+      console.log('Camera access granted, stream obtained');
       
-      if (videoRef.current && stream.active) {
-        console.log('Setting video source and starting playback');
-        videoRef.current.srcObject = stream;
-        
-        // Wait for video to be ready
-        await new Promise<void>((resolve, reject) => {
-          const video = videoRef.current!;
-          const timeout = setTimeout(() => {
-            reject(new Error('Video load timeout'));
-          }, 10000);
-          
-          const onCanPlay = () => {
-            console.log('Video can play - starting playback');
-            clearTimeout(timeout);
-            video.removeEventListener('canplay', onCanPlay);
-            video.removeEventListener('error', onError);
-            resolve();
-          };
-          
-          const onError = (error: any) => {
-            console.error('Video error:', error);
-            clearTimeout(timeout);
-            video.removeEventListener('canplay', onCanPlay);
-            video.removeEventListener('error', onError);
-            reject(error);
-          };
-          
-          video.addEventListener('canplay', onCanPlay);
-          video.addEventListener('error', onError);
-          
-          // If already ready, resolve immediately
-          if (video.readyState >= 3) { // HAVE_FUTURE_DATA
-            onCanPlay();
-          }
-        });
-        
-        console.log('Starting video playback');
-        await videoRef.current.play();
-        
-        // Verify stream is still active
-        if (!stream.active) {
-          throw new Error('Stream became inactive during setup');
-        }
-        
-        streamRef.current = stream;
-        setIsCameraReady(true);
-        console.log('Camera started successfully and ready');
-        return { success: true };
-      } else {
-        throw new Error('Video element not available or stream inactive');
+      if (!videoRef.current) {
+        throw new Error('Video element not available');
       }
+      
+      // Set up the video element
+      const video = videoRef.current;
+      video.srcObject = stream;
+      
+      // Wait for the video to be ready and start playing
+      await new Promise<void>((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error('Video load timeout'));
+        }, 10000);
+        
+        const onLoadedMetadata = () => {
+          console.log('Video metadata loaded, starting playback');
+          video.play()
+            .then(() => {
+              console.log('Video playback started successfully');
+              clearTimeout(timeout);
+              cleanup();
+              resolve();
+            })
+            .catch((playError) => {
+              console.error('Video play error:', playError);
+              clearTimeout(timeout);
+              cleanup();
+              reject(playError);
+            });
+        };
+        
+        const onError = (error: any) => {
+          console.error('Video error during setup:', error);
+          clearTimeout(timeout);
+          cleanup();
+          reject(error);
+        };
+        
+        const cleanup = () => {
+          video.removeEventListener('loadedmetadata', onLoadedMetadata);
+          video.removeEventListener('error', onError);
+        };
+        
+        video.addEventListener('loadedmetadata', onLoadedMetadata);
+        video.addEventListener('error', onError);
+        
+        // If video is already ready, trigger immediately
+        if (video.readyState >= 1) { // HAVE_METADATA
+          onLoadedMetadata();
+        }
+      });
+      
+      // Verify stream is still active
+      if (!stream.active) {
+        throw new Error('Stream became inactive during setup');
+      }
+      
+      streamRef.current = stream;
+      console.log('Camera started successfully and ready for face detection');
+      return { success: true };
+      
     } catch (error) {
       console.error('Error accessing camera:', error);
       

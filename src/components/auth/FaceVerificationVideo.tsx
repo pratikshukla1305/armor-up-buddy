@@ -27,10 +27,16 @@ const FaceVerificationVideo: React.FC<FaceVerificationVideoProps> = ({
   onCameraReady
 }) => {
   const handleVideoCanPlay = () => {
-    console.log('Video can play - notifying parent component');
-    if (!isCameraReady) {
+    console.log('Video can play - camera is ready for face detection');
+    // Only notify parent if camera is not already marked as ready
+    if (!isCameraReady && videoRef.current && videoRef.current.readyState >= 3) {
+      console.log('Notifying parent that camera is ready');
       onCameraReady();
     }
+  };
+
+  const handleVideoError = (e: React.SyntheticEvent<HTMLVideoElement>) => {
+    console.error('Video error occurred:', e);
   };
 
   return (
@@ -42,11 +48,9 @@ const FaceVerificationVideo: React.FC<FaceVerificationVideoProps> = ({
         playsInline 
         muted
         onCanPlay={handleVideoCanPlay}
-        onError={(e) => {
-          console.error('Video error:', e);
-        }}
+        onError={handleVideoError}
         style={{
-          display: isCameraReady ? 'block' : 'none'
+          display: 'block'
         }}
       />
       <canvas 
@@ -64,9 +68,9 @@ const FaceVerificationVideo: React.FC<FaceVerificationVideoProps> = ({
             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white mx-auto mb-3"></div>
             <p className="text-lg font-medium">
               {!isModelLoaded ? 'Loading face recognition models...' : 
-               !isCameraReady ? 'Initializing camera...' :
+               !isCameraReady ? 'Starting camera...' :
                isVerifying ? 'Verifying your identity...' :
-               'Starting camera...'}
+               'Preparing camera...'}
             </p>
             {verificationMessage && (
               <p className="text-sm text-gray-300 mt-2">{verificationMessage}</p>
