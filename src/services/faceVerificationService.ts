@@ -27,6 +27,21 @@ export interface FaceDetection {
   created_at: string;
 }
 
+// Type guard to ensure verification_status is valid
+const isValidVerificationStatus = (status: string): status is FaceVerificationSession['verification_status'] => {
+  return ['pending', 'verified', 'failed', 'expired'].includes(status);
+};
+
+// Helper function to transform database row to FaceVerificationSession
+const transformToFaceVerificationSession = (row: any): FaceVerificationSession => {
+  const status = row.verification_status;
+  
+  return {
+    ...row,
+    verification_status: isValidVerificationStatus(status) ? status : 'pending'
+  } as FaceVerificationSession;
+};
+
 export const createFaceVerificationSession = async (
   userId: string,
   referenceFaceUrl?: string
@@ -60,7 +75,7 @@ export const createFaceVerificationSession = async (
     }
 
     console.log('Face verification session created:', data);
-    return data;
+    return transformToFaceVerificationSession(data);
   } catch (error) {
     console.error('Error in createFaceVerificationSession:', error);
     return null;
@@ -171,8 +186,13 @@ export const getUserActiveSession = async (userId: string): Promise<FaceVerifica
       return null;
     }
 
+    if (!data) {
+      console.log('No active session found');
+      return null;
+    }
+
     console.log('Active session found:', data);
-    return data;
+    return transformToFaceVerificationSession(data);
   } catch (error) {
     console.error('Error in getUserActiveSession:', error);
     return null;
