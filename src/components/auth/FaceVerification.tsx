@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useFaceApi } from '@/hooks/useFaceApi';
 import { useCamera } from '@/hooks/useCamera';
 import { useFaceVerification } from '@/hooks/useFaceVerification';
+import { useFaceVerificationSession } from '@/hooks/useFaceVerificationSession';
 import FaceVerificationVideo from './FaceVerificationVideo';
 import FaceVerificationControls from './FaceVerificationControls';
 import FaceVerificationAlerts from './FaceVerificationAlerts';
@@ -68,20 +69,38 @@ const FaceVerification: React.FC<FaceVerificationProps> = ({
     stopMonitoring
   } = useFaceVerification();
 
-  // Load expected face when models are ready
+  const {
+    currentSession,
+    isSessionActive,
+    startSession,
+    recordDetection,
+    endSession,
+    cleanup
+  } = useFaceVerificationSession();
+
+  // Initialize session and load expected face when models are ready
   useEffect(() => {
     console.log('FaceVerification component mounted');
     console.log('Expected face URL:', expectedFaceUrl);
     console.log('Is model loaded:', isModelLoaded);
     
-    if (expectedFaceUrl && isModelLoaded) {
-      console.log('Loading expected face...');
-      loadExpectedFace(expectedFaceUrl);
-    } else if (!expectedFaceUrl && isModelLoaded) {
-      console.log('No reference face URL provided, but models are loaded');
-      setVerificationMessage('Facial recognition models loaded. Ready to start camera for live verification.');
-    }
-  }, [expectedFaceUrl, isModelLoaded, loadExpectedFace, setVerificationMessage]);
+    const initializeSession = async () => {
+      if (isModelLoaded && !isSessionActive) {
+        console.log('Initializing face verification session...');
+        const session = await startSession(expectedFaceUrl);
+        
+        if (session && expectedFaceUrl) {
+          console.log('Loading expected face...');
+          loadExpectedFace(expectedFaceUrl);
+        } else if (session && !expectedFaceUrl) {
+          console.log('No reference face URL provided, but session started');
+          setVerificationMessage('Facial recognition models loaded. Ready to start camera for live verification.');
+        }
+      }
+    };
+
+    initializeSession();
+  }, [expectedFaceUrl, isModelLoaded, isSessionActive, startSession, loadExpectedFace, setVerificationMessage]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -89,8 +108,9 @@ const FaceVerification: React.FC<FaceVerificationProps> = ({
       console.log('FaceVerification component unmounting, cleaning up...');
       stopStream();
       stopMonitoring();
+      cleanup();
     };
-  }, [stopStream, stopMonitoring]);
+  }, [stopStream, stopMonitoring, cleanup]);
 
   // Start camera handler
   const handleStartCamera = async () => {
@@ -130,7 +150,7 @@ const FaceVerification: React.FC<FaceVerificationProps> = ({
     window.location.reload();
   }, []);
 
-  // Start continuous face verification
+  // Start continuous face monitoring
   const startMonitoringFace = () => {
     console.log('Starting face monitoring...');
     setIsMonitoring(true);
@@ -161,20 +181,32 @@ const FaceVerification: React.FC<FaceVerificationProps> = ({
             
             drawFaceDetection(canvas, videoRef.current, detections);
             
-            // Verify face if we have a reference face
+            // Record detection in database
+            let faceMatch = null;
             if (expectedFaceEmbedding) {
-              const isMatch = compareFaces(detections.descriptor);
-              if (isMatch === false) {
+              faceMatch = compareFaces(detections.descriptor);
+              if (faceMatch === false) {
                 console.log('Different person detected!');
                 setShowDifferentPersonAlert(true);
               }
             }
+            
+            // Record the detection
+            await recordDetection(
+              true,
+              detections.detection.score,
+              faceMatch,
+              detections.detection.box
+            );
           } else {
             // Clear canvas when no face detected
             const ctx = canvas.getContext('2d');
             if (ctx) {
               ctx.clearRect(0, 0, canvas.width, canvas.height);
             }
+            
+            // Record no face detection
+            await recordDetection(false);
             
             setNoFaceDetectedCount(prev => {
               const newCount = prev + 1;
@@ -220,10 +252,21 @@ const FaceVerification: React.FC<FaceVerificationProps> = ({
           // If we have a reference face, verify against it
           const isMatch = compareFaces(detections.descriptor);
           
+          // Record the verification attempt
+          await recordDetection(
+            true,
+            detections.detection.score,
+            isMatch,
+            detections.detection.box
+          );
+          
           if (isMatch) {
             console.log('Face verification successful!');
             setVerificationMessage('Verification successful! Continuing to monitor for security.');
             toast.success('Identity verified successfully!');
+            
+            // Update session as verified
+            await endSession('verified');
             
             startMonitoringFace();
             
@@ -234,6 +277,7 @@ const FaceVerification: React.FC<FaceVerificationProps> = ({
             console.log('Face verification failed - no match');
             setVerificationMessage('Verification failed. Face does not match the registered face.');
             toast.error('Verification failed. Face does not match the registered face.');
+            await endSession('failed');
             setIsVerifying(false);
           }
         } else {
@@ -241,6 +285,17 @@ const FaceVerification: React.FC<FaceVerificationProps> = ({
           console.log('No reference face available, proceeding with live monitoring');
           setVerificationMessage('Face detected. Starting live monitoring...');
           toast.success('Face detected successfully!');
+          
+          // Record the detection
+          await recordDetection(
+            true,
+            detections.detection.score,
+            null,
+            detections.detection.box
+          );
+          
+          // Update session as verified
+          await endSession('verified');
           
           startMonitoringFace();
           
@@ -252,12 +307,19 @@ const FaceVerification: React.FC<FaceVerificationProps> = ({
         console.log('No face detected during verification');
         setVerificationMessage('No face detected. Please position yourself clearly in front of the camera.');
         toast.error('No face detected. Please position yourself clearly in front of the camera.');
+        
+        // Record failed detection
+        await recordDetection(false);
+        
         setIsVerifying(false);
       }
     } catch (error) {
       console.error('Error verifying face:', error);
       setVerificationMessage('An error occurred during verification. Please try again.');
       toast.error('An error occurred during verification. Please try again.');
+      
+      // End session with error
+      await endSession('failed');
       setIsVerifying(false);
     }
   };

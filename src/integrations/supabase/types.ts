@@ -558,6 +558,92 @@ export type Database = {
           },
         ]
       }
+      face_detections: {
+        Row: {
+          confidence_score: number | null
+          created_at: string
+          detection_time: string
+          face_coordinates: Json | null
+          face_detected: boolean
+          face_match: boolean | null
+          id: string
+          session_id: string | null
+          user_id: string
+        }
+        Insert: {
+          confidence_score?: number | null
+          created_at?: string
+          detection_time?: string
+          face_coordinates?: Json | null
+          face_detected?: boolean
+          face_match?: boolean | null
+          id?: string
+          session_id?: string | null
+          user_id: string
+        }
+        Update: {
+          confidence_score?: number | null
+          created_at?: string
+          detection_time?: string
+          face_coordinates?: Json | null
+          face_detected?: boolean
+          face_match?: boolean | null
+          id?: string
+          session_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "face_detections_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "face_verification_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      face_verification_sessions: {
+        Row: {
+          created_at: string
+          device_info: Json | null
+          id: string
+          last_verification_time: string | null
+          reference_face_url: string | null
+          session_end: string | null
+          session_start: string
+          updated_at: string
+          user_id: string
+          verification_attempts: number | null
+          verification_status: string
+        }
+        Insert: {
+          created_at?: string
+          device_info?: Json | null
+          id?: string
+          last_verification_time?: string | null
+          reference_face_url?: string | null
+          session_end?: string | null
+          session_start?: string
+          updated_at?: string
+          user_id: string
+          verification_attempts?: number | null
+          verification_status?: string
+        }
+        Update: {
+          created_at?: string
+          device_info?: Json | null
+          id?: string
+          last_verification_time?: string | null
+          reference_face_url?: string | null
+          session_end?: string | null
+          session_start?: string
+          updated_at?: string
+          user_id?: string
+          verification_attempts?: number | null
+          verification_status?: string
+        }
+        Relationships: []
+      }
       forum_replies: {
         Row: {
           content: string
