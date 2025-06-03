@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -58,9 +59,9 @@ interface TipFormProps {
 }
 
 const TipForm = ({ onSubmitStart, onSubmitEnd }: TipFormProps) => {
-  const locationHook = useLocation();
+  const routerLocation = useLocation();
   const navigate = useNavigate();
-  const queryParams = new URLSearchParams(locationHook.search);
+  const queryParams = new URLSearchParams(routerLocation.search);
   const criminalId = queryParams.get('id');
   
   const [photoFile, setPhotoFile] = useState<File | null>(null);
@@ -143,13 +144,13 @@ const TipForm = ({ onSubmitStart, onSubmitEnd }: TipFormProps) => {
       const tipData = {
         subject: criminal ? `Tip about ${criminal.name}` : 'Criminal Sighting',
         description: data.description,
-        location: data.location,
+        location: data.location, // This is now properly typed as string
         tip_date: data.dateTime,
         is_anonymous: data.stayAnonymous,
         // Map our form's contactInfo to the appropriate columns based on stayAnonymous
-        submitter_name: data.stayAnonymous ? null : data.contactInfo.split('@')[0] || null,
-        email: data.stayAnonymous ? null : (data.contactInfo.includes('@') ? data.contactInfo : null),
-        phone: data.stayAnonymous ? null : (!data.contactInfo.includes('@') ? data.contactInfo : null),
+        submitter_name: data.stayAnonymous ? null : data.contactInfo?.split('@')[0] || null,
+        email: data.stayAnonymous ? null : (data.contactInfo?.includes('@') ? data.contactInfo : null),
+        phone: data.stayAnonymous ? null : (!data.contactInfo?.includes('@') ? data.contactInfo : null),
         status: 'New',
         // If we have image data, we'd handle that separately
         image_url: photoPreview,
