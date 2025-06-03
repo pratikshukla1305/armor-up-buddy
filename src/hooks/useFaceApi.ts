@@ -24,19 +24,44 @@ export const useFaceApi = () => {
           return;
         }
         
-        console.log('Loading models from /models directory...');
+        console.log('Loading models from CDN...');
+        
+        // Load models from CDN instead of local files
+        const modelUrl = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights';
+        
         await Promise.all([
-          faceapi.nets.ssdMobilenetv1.loadFromUri('/models'),
-          faceapi.nets.faceRecognitionNet.loadFromUri('/models'),
-          faceapi.nets.faceLandmark68Net.loadFromUri('/models')
+          faceapi.nets.ssdMobilenetv1.loadFromUri(modelUrl),
+          faceapi.nets.faceRecognitionNet.loadFromUri(modelUrl),
+          faceapi.nets.faceLandmark68Net.loadFromUri(modelUrl)
         ]);
         
-        console.log('All face-api models loaded successfully');
+        console.log('All face-api models loaded successfully from CDN');
         setIsModelLoaded(true);
         setVerificationMessage('Facial recognition models loaded successfully. Please start camera.');
+        setErrorMessage(''); // Clear any previous errors
       } catch (error) {
         console.error('Error loading facial recognition models:', error);
-        setErrorMessage('Failed to load facial recognition models. Please ensure you have a stable internet connection and try again.');
+        
+        // Try fallback to local models
+        try {
+          console.log('CDN failed, trying local models...');
+          setVerificationMessage('Trying alternative model source...');
+          
+          await Promise.all([
+            faceapi.nets.ssdMobilenetv1.loadFromUri('/models'),
+            faceapi.nets.faceRecognitionNet.loadFromUri('/models'),
+            faceapi.nets.faceLandmark68Net.loadFromUri('/models')
+          ]);
+          
+          console.log('Local models loaded successfully');
+          setIsModelLoaded(true);
+          setVerificationMessage('Facial recognition models loaded successfully. Please start camera.');
+          setErrorMessage(''); // Clear any previous errors
+        } catch (localError) {
+          console.error('Both CDN and local model loading failed:', localError);
+          setErrorMessage('Failed to load facial recognition models. Please check your internet connection and try again.');
+          setVerificationMessage('');
+        }
       }
     };
     
@@ -56,9 +81,10 @@ export const useFaceApi = () => {
         .withFaceDescriptor();
       
       if (detection) {
-        console.log('Face detected in reference image');
+        console.log('Face detected in reference image, confidence:', detection.detection.score);
         setExpectedFaceEmbedding(detection.descriptor);
         setVerificationMessage('Reference face loaded successfully. Ready to verify.');
+        setErrorMessage(''); // Clear any previous errors
       } else {
         console.error('No face detected in reference image');
         setErrorMessage('No face detected in the reference image. Please update your profile with a clear face image.');
@@ -72,12 +98,19 @@ export const useFaceApi = () => {
   const detectFace = async (video: HTMLVideoElement) => {
     try {
       console.log('Detecting face in video stream...');
+      
+      // Ensure video is ready
+      if (video.readyState !== video.HAVE_ENOUGH_DATA) {
+        console.log('Video not ready for face detection');
+        return null;
+      }
+      
       const detection = await faceapi.detectSingleFace(video)
         .withFaceLandmarks()
         .withFaceDescriptor();
       
       if (detection) {
-        console.log('Face detected successfully');
+        console.log('Face detected successfully with confidence:', detection.detection.score);
       } else {
         console.log('No face detected in current frame');
       }
@@ -96,10 +129,10 @@ export const useFaceApi = () => {
     }
     
     const distance = faceapi.euclideanDistance(expectedFaceEmbedding, descriptor);
-    const threshold = 0.5;
+    const threshold = 0.6; // Slightly more lenient threshold for better recognition
     const isMatch = distance <= threshold;
     
-    console.log(`Face comparison - Distance: ${distance}, Threshold: ${threshold}, Match: ${isMatch}`);
+    console.log(`Face comparison - Distance: ${distance.toFixed(3)}, Threshold: ${threshold}, Match: ${isMatch}`);
     return isMatch;
   };
 

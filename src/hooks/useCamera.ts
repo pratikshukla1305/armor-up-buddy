@@ -21,9 +21,10 @@ export const useCamera = () => {
       
       const constraints = { 
         video: { 
-          width: { ideal: 640 },
-          height: { ideal: 480 },
-          facingMode: "user"
+          width: { ideal: 640, min: 480 },
+          height: { ideal: 480, min: 360 },
+          facingMode: "user",
+          frameRate: { ideal: 30, min: 15 }
         } 
       };
       
@@ -35,16 +36,39 @@ export const useCamera = () => {
         console.log('Setting video source and starting playback');
         videoRef.current.srcObject = stream;
         
-        // Wait for the video to load metadata
+        // Wait for the video to load metadata with timeout
         await new Promise((resolve, reject) => {
           if (videoRef.current) {
-            videoRef.current.onloadedmetadata = resolve;
-            videoRef.current.onerror = reject;
+            const timeout = setTimeout(() => {
+              reject(new Error('Video load timeout'));
+            }, 10000); // 10 second timeout
+            
+            videoRef.current.onloadedmetadata = () => {
+              clearTimeout(timeout);
+              resolve(true);
+            };
+            videoRef.current.onerror = (error) => {
+              clearTimeout(timeout);
+              reject(error);
+            };
           }
         });
         
         console.log('Video metadata loaded, starting playback');
         await videoRef.current.play();
+        
+        // Additional check to ensure video is actually playing
+        await new Promise(resolve => {
+          const checkPlaying = () => {
+            if (videoRef.current && videoRef.current.readyState >= 2) {
+              console.log('Video is playing and ready');
+              resolve(true);
+            } else {
+              setTimeout(checkPlaying, 100);
+            }
+          };
+          checkPlaying();
+        });
         
         streamRef.current = stream;
         setIsCameraReady(true);
@@ -65,6 +89,8 @@ export const useCamera = () => {
           errorMessage += 'No camera found. Please connect a camera and try again.';
         } else if (error.name === 'NotReadableError') {
           errorMessage += 'Camera is already in use by another application.';
+        } else if (error.message === 'Video load timeout') {
+          errorMessage += 'Camera took too long to initialize. Please try again.';
         } else {
           errorMessage += error.message;
         }

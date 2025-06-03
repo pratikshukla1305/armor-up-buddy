@@ -7,12 +7,16 @@ import AuthButton from '@/components/AuthButton';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import FaceVerification from '@/components/auth/FaceVerification';
+import { getUserKycStatus } from '@/services/userServices';
 
 const SignIn = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [showFaceVerification, setShowFaceVerification] = useState(false);
+  const [userKycData, setUserKycData] = useState<any>(null);
   const { signIn, user } = useAuth();
   const navigate = useNavigate();
   
@@ -43,18 +47,77 @@ const SignIn = () => {
       if (error) {
         console.error("Sign-in error:", error.message);
         toast.error(`Sign-in error: ${error.message}`);
+        setIsLoading(false);
       } else {
-        console.log("Sign in successful, redirecting to dashboard");
-        toast.success("Sign in successful!");
-        setTimeout(() => navigate('/dashboard'), 500);
+        console.log("Sign in successful, checking KYC status for face verification");
+        
+        // Check KYC status and initiate face verification if approved
+        try {
+          const kycData = await getUserKycStatus(email);
+          console.log("KYC data received:", kycData);
+          
+          if (kycData?.status === 'Approved' && kycData.selfie) {
+            console.log("KYC approved with selfie, showing face verification");
+            setUserKycData(kycData);
+            setShowFaceVerification(true);
+            setIsLoading(false);
+          } else {
+            console.log("KYC not approved or no selfie, proceeding to dashboard");
+            toast.success("Sign in successful!");
+            setTimeout(() => navigate('/dashboard'), 500);
+            setIsLoading(false);
+          }
+        } catch (kycError) {
+          console.error("Error checking KYC status:", kycError);
+          // If KYC check fails, still allow login but skip face verification
+          toast.success("Sign in successful!");
+          setTimeout(() => navigate('/dashboard'), 500);
+          setIsLoading(false);
+        }
       }
     } catch (err: any) {
       console.error("Unexpected error during sign in:", err);
       toast.error("An unexpected error occurred");
-    } finally {
       setIsLoading(false);
     }
   };
+
+  const handleFaceVerificationSuccess = () => {
+    console.log("Face verification successful, proceeding to dashboard");
+    toast.success("Identity verified successfully! Welcome back.");
+    setTimeout(() => navigate('/dashboard'), 500);
+  };
+
+  const handleSkipFaceVerification = () => {
+    console.log("User chose to skip face verification");
+    toast.warning('Proceeding without face verification.', { duration: 3000 });
+    setTimeout(() => navigate('/dashboard'), 500);
+  };
+
+  if (showFaceVerification) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Navbar />
+        <section className="section-padding bg-gray-50 flex items-center justify-center pt-28">
+          <div className="container max-w-md mx-auto px-4">
+            <div className="glass-card p-8">
+              <div className="text-center mb-6">
+                <h2 className="text-2xl font-bold mb-2">Identity Verification</h2>
+                <p className="text-gray-600">Please verify your identity using face recognition to complete the login process.</p>
+              </div>
+              
+              <FaceVerification
+                onSuccess={handleFaceVerificationSuccess}
+                onCancel={handleSkipFaceVerification}
+                expectedFaceUrl={userKycData?.selfie}
+                showSOSButton={false}
+              />
+            </div>
+          </div>
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white">

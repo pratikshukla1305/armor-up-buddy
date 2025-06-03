@@ -1,5 +1,5 @@
 
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import SOSButton from '../sos/SOSButton';
@@ -108,6 +108,16 @@ const FaceVerification: React.FC<FaceVerificationProps> = ({
       setVerificationMessage('Camera started successfully. Position your face in the frame.');
     }
   };
+
+  // Retry model loading
+  const handleRetryModels = useCallback(() => {
+    console.log('Retrying model loading...');
+    setErrorMessage('');
+    setVerificationMessage('Retrying model loading...');
+    
+    // Force page reload to retry model loading
+    window.location.reload();
+  }, []);
 
   // Start continuous face verification
   const startMonitoringFace = () => {
@@ -305,6 +315,7 @@ const FaceVerification: React.FC<FaceVerificationProps> = ({
           onStartCamera={handleStartCamera}
           onVerifyFace={verifyFace}
           onCancel={onCancel}
+          onRetryModels={handleRetryModels}
         />
       </div>
       
