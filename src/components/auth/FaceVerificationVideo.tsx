@@ -26,46 +26,6 @@ const FaceVerificationVideo: React.FC<FaceVerificationVideoProps> = ({
   onCancel,
   onCameraReady
 }) => {
-  const handleVideoLoadedMetadata = () => {
-    console.log('Video metadata loaded - setting up video display');
-    if (videoRef.current) {
-      const video = videoRef.current;
-      console.log('Video dimensions:', video.videoWidth, 'x', video.videoHeight);
-      console.log('Video ready state:', video.readyState);
-      
-      // Ensure video is playing
-      video.play().then(() => {
-        console.log('Video is now playing');
-        if (!isCameraReady) {
-          console.log('Triggering camera ready callback');
-          onCameraReady();
-        }
-      }).catch(error => {
-        console.error('Error playing video:', error);
-      });
-    }
-  };
-
-  const handleVideoCanPlay = () => {
-    console.log('Video can play event triggered');
-    if (videoRef.current && videoRef.current.readyState >= 3) {
-      console.log('Video has enough data to play');
-      handleVideoLoadedMetadata();
-    }
-  };
-
-  const handleVideoPlaying = () => {
-    console.log('Video is actively playing');
-    if (!isCameraReady && videoRef.current) {
-      console.log('Video started playing, marking camera as ready');
-      onCameraReady();
-    }
-  };
-
-  const handleVideoError = (e: React.SyntheticEvent<HTMLVideoElement>) => {
-    console.error('Video error occurred:', e);
-  };
-
   // Set up canvas dimensions when camera is ready
   useEffect(() => {
     if (isCameraReady && videoRef.current && canvasRef.current) {
@@ -88,10 +48,6 @@ const FaceVerificationVideo: React.FC<FaceVerificationVideoProps> = ({
         autoPlay 
         playsInline 
         muted
-        onLoadedMetadata={handleVideoLoadedMetadata}
-        onCanPlay={handleVideoCanPlay}
-        onPlaying={handleVideoPlaying}
-        onError={handleVideoError}
         style={{
           display: 'block',
           backgroundColor: '#000'

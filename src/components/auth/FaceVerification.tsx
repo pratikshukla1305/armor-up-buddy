@@ -125,21 +125,16 @@ const FaceVerification: React.FC<FaceVerificationProps> = ({
       console.error('Failed to start camera:', result.error);
       setErrorMessage(result.error);
       setVerificationMessage('');
-    } else {
-      console.log('Camera started successfully, waiting for video to be ready...');
-      setVerificationMessage('Camera starting... Please wait for video preview.');
+    } else if (result.success) {
+      console.log('Camera started successfully');
+      setVerificationMessage('Camera is ready. Click "Verify Identity" to proceed.');
     }
   };
 
-  // Camera ready callback
+  // Camera ready callback - simplified since camera setup is now handled in startCamera
   const handleCameraReady = useCallback(() => {
-    console.log('Camera ready callback triggered - video is now streaming');
-    if (!isCameraReady) {
-      setIsCameraReady(true);
-      setVerificationMessage('Camera is ready. Click "Verify Identity" to proceed.');
-      console.log('Camera marked as ready for face detection');
-    }
-  }, [isCameraReady, setIsCameraReady, setVerificationMessage]);
+    console.log('Camera ready callback - this should not be needed anymore');
+  }, []);
 
   // Retry model loading
   const handleRetryModels = useCallback(() => {

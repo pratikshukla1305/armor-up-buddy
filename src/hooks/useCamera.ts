@@ -31,49 +31,45 @@ export const useCamera = () => {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         throw new Error('Camera not supported in this browser');
       }
-      
-      const constraints = { 
-        video: { 
-          width: { ideal: 640, min: 480, max: 1280 },
-          height: { ideal: 480, min: 360, max: 720 },
-          facingMode: "user",
-          frameRate: { ideal: 30, min: 15, max: 60 }
-        } 
-      };
-      
-      console.log('Requesting camera access with constraints:', constraints);
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      console.log('Camera access granted, stream obtained:', stream);
-      
+
       if (!videoRef.current) {
         throw new Error('Video element not available');
       }
       
-      // Set up the video element
-      const video = videoRef.current;
+      // Simple, reliable constraints
+      const constraints = { 
+        video: { 
+          width: { ideal: 640 },
+          height: { ideal: 480 },
+          facingMode: "user"
+        } 
+      };
       
-      // Clear any existing source
-      if (video.srcObject) {
-        video.srcObject = null;
-      }
-      
-      // Set the new stream
-      video.srcObject = stream;
-      
-      // Ensure video properties are set correctly
-      video.autoplay = true;
-      video.playsInline = true;
-      video.muted = true;
-      
-      console.log('Video element configured with stream');
+      console.log('Requesting camera access...');
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      console.log('Camera access granted, stream obtained');
       
       // Verify stream is active
       if (!stream.active) {
         throw new Error('Stream became inactive during setup');
       }
       
-      // Store the stream reference
+      // Store the stream reference immediately
       streamRef.current = stream;
+      
+      // Set up the video element
+      const video = videoRef.current;
+      video.srcObject = stream;
+      video.autoplay = true;
+      video.playsInline = true;
+      video.muted = true;
+      
+      // Force video to load and play
+      await video.load();
+      await video.play();
+      
+      console.log('Video is now playing, marking camera as ready');
+      setIsCameraReady(true);
       
       console.log('Camera initialization completed successfully');
       return { success: true };
