@@ -26,9 +26,11 @@ const FaceVerificationVideo: React.FC<FaceVerificationVideoProps> = ({
   onCancel,
   onCameraReady
 }) => {
-  const handleVideoLoadedMetadata = () => {
-    console.log('Video metadata loaded in component');
-    onCameraReady();
+  const handleVideoCanPlay = () => {
+    console.log('Video can play - notifying parent component');
+    if (!isCameraReady) {
+      onCameraReady();
+    }
   };
 
   return (
@@ -39,17 +41,20 @@ const FaceVerificationVideo: React.FC<FaceVerificationVideoProps> = ({
         autoPlay 
         playsInline 
         muted
-        onLoadedMetadata={handleVideoLoadedMetadata}
+        onCanPlay={handleVideoCanPlay}
         onError={(e) => {
           console.error('Video error:', e);
         }}
-        onCanPlay={() => {
-          console.log('Video can play');
+        style={{
+          display: isCameraReady ? 'block' : 'none'
         }}
       />
       <canvas 
         ref={canvasRef} 
         className="absolute top-0 left-0 w-full h-full pointer-events-none"
+        style={{
+          display: isCameraReady ? 'block' : 'none'
+        }}
       />
       
       {/* Status overlay */}
@@ -59,10 +64,13 @@ const FaceVerificationVideo: React.FC<FaceVerificationVideoProps> = ({
             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white mx-auto mb-3"></div>
             <p className="text-lg font-medium">
               {!isModelLoaded ? 'Loading face recognition models...' : 
-               !isCameraReady ? 'Starting camera...' :
+               !isCameraReady ? 'Initializing camera...' :
                isVerifying ? 'Verifying your identity...' :
-               verificationMessage || 'Preparing facial verification...'}
+               'Starting camera...'}
             </p>
+            {verificationMessage && (
+              <p className="text-sm text-gray-300 mt-2">{verificationMessage}</p>
+            )}
           </div>
         </div>
       )}
