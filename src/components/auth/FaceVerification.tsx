@@ -91,7 +91,7 @@ const FaceVerification: React.FC<FaceVerificationProps> = ({
         
         if (session && expectedFaceUrl) {
           console.log('Loading expected face...');
-          loadExpectedFace(expectedFaceUrl);
+          await loadExpectedFace(expectedFaceUrl);
         } else if (session && !expectedFaceUrl) {
           console.log('No reference face URL provided, but session started');
           setVerificationMessage('Facial recognition models loaded. Ready to start camera for live verification.');
@@ -126,8 +126,8 @@ const FaceVerification: React.FC<FaceVerificationProps> = ({
       setErrorMessage(result.error);
       setVerificationMessage('');
     } else {
-      console.log('Camera started successfully');
-      setVerificationMessage('Camera is ready. Click "Verify Identity" to proceed.');
+      console.log('Camera started successfully, waiting for video to be ready...');
+      setVerificationMessage('Camera starting... Please wait for video preview.');
     }
   };
 
@@ -137,6 +137,7 @@ const FaceVerification: React.FC<FaceVerificationProps> = ({
     if (!isCameraReady) {
       setIsCameraReady(true);
       setVerificationMessage('Camera is ready. Click "Verify Identity" to proceed.');
+      console.log('Camera marked as ready for face detection');
     }
   }, [isCameraReady, setIsCameraReady, setVerificationMessage]);
 
@@ -148,7 +149,7 @@ const FaceVerification: React.FC<FaceVerificationProps> = ({
     
     // Force page reload to retry model loading
     window.location.reload();
-  }, []);
+  }, [setErrorMessage, setVerificationMessage]);
 
   // Start continuous face monitoring
   const startMonitoringFace = () => {
@@ -171,11 +172,13 @@ const FaceVerification: React.FC<FaceVerificationProps> = ({
     try {
       const now = Date.now();
       if (now - lastVerificationTime >= verificationInterval) {
+        console.log('Performing face detection...');
         const detections = await detectFace(videoRef.current);
         
         const canvas = canvasRef.current;
         if (canvas && videoRef.current) {
           if (detections) {
+            console.log('Face detected in monitoring');
             setNoFaceDetectedCount(0);
             if (showNoFaceAlert) setShowNoFaceAlert(false);
             
@@ -199,6 +202,7 @@ const FaceVerification: React.FC<FaceVerificationProps> = ({
               detections.detection.box
             );
           } else {
+            console.log('No face detected in monitoring');
             // Clear canvas when no face detected
             const ctx = canvas.getContext('2d');
             if (ctx) {
@@ -210,7 +214,7 @@ const FaceVerification: React.FC<FaceVerificationProps> = ({
             
             setNoFaceDetectedCount(prev => {
               const newCount = prev + 1;
-              if (newCount > 3 && !showNoFaceAlert) {
+              if (newCount > 5 && !showNoFaceAlert) {
                 console.log('No face detected for multiple frames, showing alert');
                 setShowNoFaceAlert(true);
               }
@@ -246,7 +250,7 @@ const FaceVerification: React.FC<FaceVerificationProps> = ({
       const detections = await detectFace(videoRef.current);
       
       if (detections) {
-        console.log('Face detected during verification');
+        console.log('Face detected during verification with confidence:', detections.detection.score);
         
         if (expectedFaceEmbedding) {
           // If we have a reference face, verify against it

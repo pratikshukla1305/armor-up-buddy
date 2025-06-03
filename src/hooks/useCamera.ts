@@ -17,11 +17,15 @@ export const useCamera = () => {
       console.log('Starting camera initialization...');
       isInitializingRef.current = true;
       
+      // Stop any existing stream
       if (streamRef.current) {
         console.log('Stopping existing stream before starting new one');
         streamRef.current.getTracks().forEach(track => track.stop());
         streamRef.current = null;
       }
+
+      // Reset camera ready state
+      setIsCameraReady(false);
       
       // Check if browser supports getUserMedia
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -30,16 +34,16 @@ export const useCamera = () => {
       
       const constraints = { 
         video: { 
-          width: { ideal: 640, min: 480 },
-          height: { ideal: 480, min: 360 },
+          width: { ideal: 640, min: 480, max: 1280 },
+          height: { ideal: 480, min: 360, max: 720 },
           facingMode: "user",
-          frameRate: { ideal: 30, min: 15 }
+          frameRate: { ideal: 30, min: 15, max: 60 }
         } 
       };
       
       console.log('Requesting camera access with constraints:', constraints);
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      console.log('Camera access granted, stream obtained');
+      console.log('Camera access granted, stream obtained:', stream);
       
       if (!videoRef.current) {
         throw new Error('Video element not available');
@@ -47,59 +51,31 @@ export const useCamera = () => {
       
       // Set up the video element
       const video = videoRef.current;
+      
+      // Clear any existing source
+      if (video.srcObject) {
+        video.srcObject = null;
+      }
+      
+      // Set the new stream
       video.srcObject = stream;
       
-      // Wait for the video to be ready and start playing
-      await new Promise<void>((resolve, reject) => {
-        const timeout = setTimeout(() => {
-          reject(new Error('Video load timeout'));
-        }, 10000);
-        
-        const onLoadedMetadata = () => {
-          console.log('Video metadata loaded, starting playback');
-          video.play()
-            .then(() => {
-              console.log('Video playback started successfully');
-              clearTimeout(timeout);
-              cleanup();
-              resolve();
-            })
-            .catch((playError) => {
-              console.error('Video play error:', playError);
-              clearTimeout(timeout);
-              cleanup();
-              reject(playError);
-            });
-        };
-        
-        const onError = (error: any) => {
-          console.error('Video error during setup:', error);
-          clearTimeout(timeout);
-          cleanup();
-          reject(error);
-        };
-        
-        const cleanup = () => {
-          video.removeEventListener('loadedmetadata', onLoadedMetadata);
-          video.removeEventListener('error', onError);
-        };
-        
-        video.addEventListener('loadedmetadata', onLoadedMetadata);
-        video.addEventListener('error', onError);
-        
-        // If video is already ready, trigger immediately
-        if (video.readyState >= 1) { // HAVE_METADATA
-          onLoadedMetadata();
-        }
-      });
+      // Ensure video properties are set correctly
+      video.autoplay = true;
+      video.playsInline = true;
+      video.muted = true;
       
-      // Verify stream is still active
+      console.log('Video element configured with stream');
+      
+      // Verify stream is active
       if (!stream.active) {
         throw new Error('Stream became inactive during setup');
       }
       
+      // Store the stream reference
       streamRef.current = stream;
-      console.log('Camera started successfully and ready for face detection');
+      
+      console.log('Camera initialization completed successfully');
       return { success: true };
       
     } catch (error) {
@@ -114,8 +90,8 @@ export const useCamera = () => {
           errorMessage += 'No camera found. Please connect a camera and try again.';
         } else if (error.name === 'NotReadableError') {
           errorMessage += 'Camera is already in use by another application.';
-        } else if (error.message === 'Video load timeout') {
-          errorMessage += 'Camera took too long to initialize. Please try again.';
+        } else if (error.name === 'OverconstrainedError') {
+          errorMessage += 'Camera constraints could not be satisfied. Please try again.';
         } else {
           errorMessage += error.message;
         }
@@ -136,12 +112,12 @@ export const useCamera = () => {
     console.log('Stopping camera stream');
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => {
-        console.log('Stopping track:', track.kind);
+        console.log('Stopping track:', track.kind, track.label);
         track.stop();
       });
       streamRef.current = null;
       setIsCameraReady(false);
-      console.log('Camera stream stopped');
+      console.log('Camera stream stopped and state reset');
     }
   }, []);
 

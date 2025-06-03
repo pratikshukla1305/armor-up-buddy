@@ -10,45 +10,78 @@ export const useFaceVerification = () => {
   const [showDifferentPersonAlert, setShowDifferentPersonAlert] = useState(false);
   const [showNoFaceAlert, setShowNoFaceAlert] = useState(false);
   const animationFrameRef = useRef<number | null>(null);
-  const verificationInterval = 2000;
+  const verificationInterval = 1000; // Reduced interval for better responsiveness
 
   const drawFaceDetection = (
     canvas: HTMLCanvasElement,
     video: HTMLVideoElement,
     detection: any
   ) => {
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    // Ensure canvas dimensions match video
+    if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
+      canvas.width = video.videoWidth || 640;
+      canvas.height = video.videoHeight || 480;
+    }
     
     const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) {
+      console.error('Could not get canvas context');
+      return;
+    }
 
+    // Clear the canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    if (detection) {
-      const dims = faceapi.matchDimensions(canvas, video, true);
-      const resizedDetection = faceapi.resizeResults(detection, dims);
+    if (detection && detection.detection) {
+      console.log('Drawing face detection box');
       
+      // Get the display dimensions
+      const displayWidth = canvas.clientWidth;
+      const displayHeight = canvas.clientHeight;
+      const videoWidth = video.videoWidth;
+      const videoHeight = video.videoHeight;
+      
+      // Calculate scale factors
+      const scaleX = displayWidth / videoWidth;
+      const scaleY = displayHeight / videoHeight;
+      
+      const box = detection.detection.box;
+      
+      // Scale the detection box to match display size
+      const scaledBox = {
+        x: box.x * scaleX,
+        y: box.y * scaleY,
+        width: box.width * scaleX,
+        height: box.height * scaleY
+      };
+      
+      // Draw the detection box
       ctx.strokeStyle = '#10b981';
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 3;
+      ctx.strokeRect(scaledBox.x, scaledBox.y, scaledBox.width, scaledBox.height);
       
-      const box = resizedDetection.detection.box;
-      ctx.strokeRect(box.x, box.y, box.width, box.height);
-      
+      // Draw the label background
       ctx.fillStyle = '#10b981';
-      ctx.fillRect(box.x, box.y - 25, 100, 25);
-      ctx.fillStyle = 'white';
-      ctx.font = '16px Arial';
-      ctx.fillText('Detected', box.x + 5, box.y - 8);
+      ctx.fillRect(scaledBox.x, scaledBox.y - 30, 120, 30);
       
-      faceapi.draw.drawFaceLandmarks(canvas, [resizedDetection]);
+      // Draw the label text
+      ctx.fillStyle = 'white';
+      ctx.font = 'bold 16px Arial';
+      ctx.fillText('Face Detected', scaledBox.x + 5, scaledBox.y - 10);
+      
+      // Draw confidence score
+      const confidence = Math.round(detection.detection.score * 100);
+      ctx.font = '12px Arial';
+      ctx.fillText(`${confidence}%`, scaledBox.x + 5, scaledBox.y - 25);
     }
   };
 
   const stopMonitoring = () => {
+    console.log('Stopping face monitoring');
     setIsMonitoring(false);
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
     }
   };
 
