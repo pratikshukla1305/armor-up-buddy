@@ -16,7 +16,7 @@ const SignIn = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [showFaceVerification, setShowFaceVerification] = useState(false);
-  const [userKycData, setUserKycData] = useState<any>(null);
+  const [selfieFaceUrl, setSelfieFaceUrl] = useState<string | undefined>(undefined);
   const { signIn, user } = useAuth();
   const navigate = useNavigate();
   
@@ -57,8 +57,8 @@ const SignIn = () => {
           console.log("KYC data received:", kycData);
           
           if (kycData?.status === 'Approved' && kycData.selfie) {
-            console.log("KYC approved with selfie, showing face verification");
-            setUserKycData(kycData);
+            console.log("KYC approved with selfie, showing face verification. Selfie URL:", kycData.selfie);
+            setSelfieFaceUrl(kycData.selfie);
             setShowFaceVerification(true);
             setIsLoading(false);
           } else {
@@ -104,12 +104,15 @@ const SignIn = () => {
               <div className="text-center mb-6">
                 <h2 className="text-2xl font-bold mb-2">Identity Verification</h2>
                 <p className="text-gray-600">Please verify your identity using face recognition to complete the login process.</p>
+                {selfieFaceUrl && (
+                  <p className="text-sm text-green-600 mt-2">Reference face loaded successfully.</p>
+                )}
               </div>
               
               <FaceVerification
                 onSuccess={handleFaceVerificationSuccess}
                 onCancel={handleSkipFaceVerification}
-                expectedFaceUrl={userKycData?.selfie}
+                expectedFaceUrl={selfieFaceUrl}
                 showSOSButton={false}
               />
             </div>

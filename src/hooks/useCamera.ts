@@ -30,37 +30,51 @@ export const useCamera = () => {
       
       console.log('Requesting camera access with constraints:', constraints);
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      console.log('Camera access granted, stream obtained');
+      console.log('Camera access granted, stream obtained:', stream);
       
       if (videoRef.current) {
         console.log('Setting video source and starting playback');
         videoRef.current.srcObject = stream;
         
-        // Wait for the video to load metadata with timeout
+        // Create a promise that resolves when video is ready to play
         await new Promise((resolve, reject) => {
-          if (videoRef.current) {
-            const timeout = setTimeout(() => {
-              reject(new Error('Video load timeout'));
-            }, 10000); // 10 second timeout
-            
-            videoRef.current.onloadedmetadata = () => {
-              clearTimeout(timeout);
-              resolve(true);
-            };
-            videoRef.current.onerror = (error) => {
-              clearTimeout(timeout);
-              reject(error);
-            };
+          const video = videoRef.current!;
+          const timeout = setTimeout(() => {
+            reject(new Error('Video load timeout'));
+          }, 10000); // 10 second timeout
+          
+          const onLoadedMetadata = () => {
+            console.log('Video metadata loaded');
+            clearTimeout(timeout);
+            video.removeEventListener('loadedmetadata', onLoadedMetadata);
+            video.removeEventListener('error', onError);
+            resolve(true);
+          };
+          
+          const onError = (error: any) => {
+            console.error('Video error:', error);
+            clearTimeout(timeout);
+            video.removeEventListener('loadedmetadata', onLoadedMetadata);
+            video.removeEventListener('error', onError);
+            reject(error);
+          };
+          
+          video.addEventListener('loadedmetadata', onLoadedMetadata);
+          video.addEventListener('error', onError);
+          
+          // If metadata is already loaded, resolve immediately
+          if (video.readyState >= 1) {
+            onLoadedMetadata();
           }
         });
         
-        console.log('Video metadata loaded, starting playback');
+        console.log('Starting video playback');
         await videoRef.current.play();
         
-        // Additional check to ensure video is actually playing
-        await new Promise(resolve => {
+        // Wait for video to actually start playing
+        await new Promise((resolve) => {
           const checkPlaying = () => {
-            if (videoRef.current && videoRef.current.readyState >= 2) {
+            if (videoRef.current && videoRef.current.readyState >= 2 && !videoRef.current.paused) {
               console.log('Video is playing and ready');
               resolve(true);
             } else {

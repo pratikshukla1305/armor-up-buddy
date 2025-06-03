@@ -78,8 +78,8 @@ const FaceVerification: React.FC<FaceVerificationProps> = ({
       console.log('Loading expected face...');
       loadExpectedFace(expectedFaceUrl);
     } else if (!expectedFaceUrl && isModelLoaded) {
-      console.log('No reference face URL provided');
-      setVerificationMessage('No reference face available. Please start the camera for live verification.');
+      console.log('No reference face URL provided, but models are loaded');
+      setVerificationMessage('Facial recognition models loaded. Ready to start camera for live verification.');
     }
   }, [expectedFaceUrl, isModelLoaded, loadExpectedFace, setVerificationMessage]);
 
@@ -99,13 +99,15 @@ const FaceVerification: React.FC<FaceVerificationProps> = ({
     setVerificationMessage('Starting camera...');
     
     const result = await startCamera(videoRef);
+    console.log('Camera start result:', result);
+    
     if (!result.success && result.error) {
       console.error('Failed to start camera:', result.error);
       setErrorMessage(result.error);
       setVerificationMessage('');
     } else {
-      console.log('Camera started successfully');
-      setVerificationMessage('Camera started successfully. Position your face in the frame.');
+      console.log('Camera started successfully, updating state');
+      setVerificationMessage('Camera started successfully. Position your face in the frame and click "Verify Identity".');
     }
   };
 
@@ -299,8 +301,9 @@ const FaceVerification: React.FC<FaceVerificationProps> = ({
           errorMessage={errorMessage}
           onCancel={onCancel}
           onCameraReady={() => {
-            console.log('Camera ready callback triggered');
+            console.log('Camera ready callback triggered from video component');
             setIsCameraReady(true);
+            setVerificationMessage('Camera is ready. Click "Verify Identity" to proceed.');
           }}
         />
         
