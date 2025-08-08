@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import FaceVerification from './FaceVerification';
@@ -21,37 +21,48 @@ const SecureAuthFlow: React.FC<SecureAuthFlowProps> = ({ children }) => {
   const [kycStatus, setKycStatus] = useState<any>(null);
   const [selfieFaceUrl, setSelfieFaceUrl] = useState<string | undefined>(undefined);
   
+  // Prevent repeated KYC checks and re-mount loops
+  const checkedUserIdRef = useRef<string | null>(null);
+  const checkInProgressRef = useRef(false);
+  
   useEffect(() => {
-    const checkUserStatus = async () => {
+    const run = async () => {
+      // Avoid re-checking while verification UI is active to prevent unmounting FaceVerification
+      if (needsFaceVerification) {
+        return;
+      }
+
+      if (!user || !user.email) {
+        console.log("No user found, redirecting to signin");
+        toast.error("Please sign in to continue");
+        navigate('/signin');
+        setIsLoading(false);
+        return;
+      }
+
+      // Only run KYC check once per user session to avoid loops
+      if (checkedUserIdRef.current === user.id || checkInProgressRef.current) {
+        return;
+      }
+
+      checkInProgressRef.current = true;
+      setIsLoading(true);
+
       try {
-        setIsLoading(true);
-        
-        if (!user || !user.email) {
-          console.log("No user found, redirecting to signin");
-          toast.error("Please sign in to continue");
-          navigate('/signin');
-          setIsLoading(false);
-          return;
-        }
-        
         console.log("Checking KYC status for user:", user.email);
-        
-        // Check if the user has completed KYC verification
         const kycData = await getUserKycStatus(user.email);
         console.log("KYC data received:", kycData);
         setKycStatus(kycData);
-        
+
         if (kycData?.status === 'Approved') {
           console.log("KYC approved, checking for selfie:", kycData.selfie);
-          
-          // Set selfie URL if available
+
           if (kycData.selfie) {
             setSelfieFaceUrl(kycData.selfie);
           }
-          
-          // Check local storage for a flag that indicates we already verified this session
+
           const hasVerified = localStorage.getItem(`face_verified_${user.id}`);
-          
+
           if (!hasVerified) {
             console.log("Face verification needed - starting verification flow");
             setNeedsFaceVerification(true);
@@ -61,17 +72,18 @@ const SecureAuthFlow: React.FC<SecureAuthFlowProps> = ({ children }) => {
         } else {
           console.log("KYC not approved, status:", kycData?.status);
         }
-        
-        setIsLoading(false);
       } catch (error) {
         console.error('Error checking user status:', error);
         toast.error('Error verifying identity. Please try again.');
+      } finally {
         setIsLoading(false);
+        checkedUserIdRef.current = user.id;
+        checkInProgressRef.current = false;
       }
     };
-    
-    checkUserStatus();
-  }, [user, navigate]);
+
+    run();
+  }, [user, navigate, needsFaceVerification]);
   
   const handleVerificationSuccess = () => {
     if (user) {
