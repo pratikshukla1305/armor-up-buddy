@@ -117,6 +117,36 @@ const SecureAuthFlow: React.FC<SecureAuthFlowProps> = ({ children }) => {
     navigate('/e-kyc');
   };
   
+  if (!user) {
+    navigate('/signin');
+    return null;
+  }
+
+  // Priority: once verification is required, keep it mounted regardless of KYC or loading changes
+  if (needsFaceVerification) {
+    console.log("Rendering face verification with selfie URL:", selfieFaceUrl);
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <Card className="max-w-md w-full">
+          <CardHeader>
+            <CardTitle className="text-2xl font-bold mb-2">Identity Verification</CardTitle>
+            <CardDescription className="text-lg">
+              Please verify your identity using face recognition to continue.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <FaceVerification
+              onSuccess={handleVerificationSuccess}
+              onCancel={handleSkipVerification}
+              expectedFaceUrl={selfieFaceUrl}
+              showSOSButton={false}
+            />
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   if (isLoading) {
     console.log("Rendering loading state while checking auth/KYC");
     return (
@@ -126,11 +156,6 @@ const SecureAuthFlow: React.FC<SecureAuthFlowProps> = ({ children }) => {
         <SOSButton onClick={handleSOS} variant="floating" size="lg" />
       </div>
     );
-  }
-  
-  if (!user) {
-    navigate('/signin');
-    return null;
   }
   
   if (kycStatus?.status !== 'Approved') {
@@ -160,30 +185,6 @@ const SecureAuthFlow: React.FC<SecureAuthFlowProps> = ({ children }) => {
           </CardContent>
         </Card>
         <SOSButton onClick={handleSOS} variant="floating" size="lg" />
-      </div>
-    );
-  }
-  
-  if (needsFaceVerification) {
-    console.log("Rendering face verification with selfie URL:", selfieFaceUrl);
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <Card className="max-w-md w-full">
-          <CardHeader>
-            <CardTitle className="text-2xl font-bold mb-2">Identity Verification</CardTitle>
-            <CardDescription className="text-lg">
-              Please verify your identity using face recognition to continue.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <FaceVerification
-              onSuccess={handleVerificationSuccess}
-              onCancel={handleSkipVerification}
-              expectedFaceUrl={selfieFaceUrl}
-              showSOSButton={false}
-            />
-          </CardContent>
-        </Card>
       </div>
     );
   }
