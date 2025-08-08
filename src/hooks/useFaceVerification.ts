@@ -35,44 +35,28 @@ export const useFaceVerification = () => {
     if (detection && detection.detection) {
       console.log('Drawing face detection box');
       
-      // Get the display dimensions
-      const displayWidth = canvas.clientWidth;
-      const displayHeight = canvas.clientHeight;
-      const videoWidth = video.videoWidth;
-      const videoHeight = video.videoHeight;
-      
-      // Calculate scale factors
-      const scaleX = displayWidth / videoWidth;
-      const scaleY = displayHeight / videoHeight;
-      
+      // Draw using video coordinate space (canvas sized to match video)
       const box = detection.detection.box;
-      
-      // Scale the detection box to match display size
-      const scaledBox = {
-        x: box.x * scaleX,
-        y: box.y * scaleY,
-        width: box.width * scaleX,
-        height: box.height * scaleY
-      };
-      
+
       // Draw the detection box
       ctx.strokeStyle = '#10b981';
       ctx.lineWidth = 3;
-      ctx.strokeRect(scaledBox.x, scaledBox.y, scaledBox.width, scaledBox.height);
+      ctx.strokeRect(box.x, box.y, box.width, box.height);
       
       // Draw the label background
       ctx.fillStyle = '#10b981';
-      ctx.fillRect(scaledBox.x, scaledBox.y - 30, 120, 30);
+      const labelY = Math.max(0, box.y - 30);
+      ctx.fillRect(box.x, labelY, 140, 30);
       
       // Draw the label text
       ctx.fillStyle = 'white';
       ctx.font = 'bold 16px Arial';
-      ctx.fillText('Face Detected', scaledBox.x + 5, scaledBox.y - 10);
+      ctx.fillText('Face Detected', box.x + 5, labelY + 20);
       
       // Draw confidence score
       const confidence = Math.round(detection.detection.score * 100);
       ctx.font = '12px Arial';
-      ctx.fillText(`${confidence}%`, scaledBox.x + 5, scaledBox.y - 25);
+      ctx.fillText(`${confidence}%`, box.x + 5, labelY + 8);
     }
   };
 

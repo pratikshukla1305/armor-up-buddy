@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import * as faceapi from 'face-api.js';
 
 export const useFaceApi = () => {
@@ -68,7 +68,7 @@ export const useFaceApi = () => {
     loadModels();
   }, []);
 
-  const loadExpectedFace = async (faceUrl: string) => {
+  const loadExpectedFace = useCallback(async (faceUrl: string) => {
     try {
       console.log('Loading reference face from URL:', faceUrl);
       setVerificationMessage('Loading reference face...');
@@ -93,9 +93,9 @@ export const useFaceApi = () => {
       console.error('Error loading reference face:', error);
       setErrorMessage('Failed to load reference face. Please check your internet connection or try updating your profile photo.');
     }
-  };
+  }, []);
 
-  const detectFace = async (video: HTMLVideoElement) => {
+  const detectFace = useCallback(async (video: HTMLVideoElement) => {
     try {
       console.log('Detecting face in video stream...');
       
@@ -120,9 +120,9 @@ export const useFaceApi = () => {
       console.error('Error detecting face:', error);
       return null;
     }
-  };
+  }, []);
 
-  const compareFaces = (descriptor: Float32Array) => {
+  const compareFaces = useCallback((descriptor: Float32Array) => {
     if (!expectedFaceEmbedding) {
       console.log('No expected face embedding available for comparison');
       return null;
@@ -134,7 +134,7 @@ export const useFaceApi = () => {
     
     console.log(`Face comparison - Distance: ${distance.toFixed(3)}, Threshold: ${threshold}, Match: ${isMatch}`);
     return isMatch;
-  };
+  }, [expectedFaceEmbedding]);
 
   return {
     isModelLoaded,

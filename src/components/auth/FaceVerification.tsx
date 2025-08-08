@@ -28,6 +28,7 @@ const FaceVerification: React.FC<FaceVerificationProps> = ({
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const initializedRef = useRef(false);
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -84,6 +85,10 @@ const FaceVerification: React.FC<FaceVerificationProps> = ({
     console.log('Expected face URL:', expectedFaceUrl);
     console.log('Is model loaded:', isModelLoaded);
     
+    if (!isModelLoaded || initializedRef.current) {
+      return;
+    }
+    
     const initializeSession = async () => {
       if (isModelLoaded && !isSessionActive) {
         console.log('Initializing face verification session...');
@@ -96,6 +101,7 @@ const FaceVerification: React.FC<FaceVerificationProps> = ({
           console.log('No reference face URL provided, but session started');
           setVerificationMessage('Facial recognition models loaded. Ready to start camera for live verification.');
         }
+        initializedRef.current = true;
       }
     };
 
