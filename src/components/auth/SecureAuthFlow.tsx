@@ -88,9 +88,9 @@ const SecureAuthFlow: React.FC<SecureAuthFlowProps> = ({ children }) => {
   const handleVerificationSuccess = () => {
     if (user) {
       console.log("Face verification successful for user:", user.id);
-      // Set flag in local storage to remember verification for this session
       localStorage.setItem(`face_verified_${user.id}`, 'true');
       setNeedsFaceVerification(false);
+      console.log("Face verification complete, rendering protected children next");
       toast.success('Identity verified successfully! Welcome back.');
     }
   };
@@ -110,6 +110,7 @@ const SecureAuthFlow: React.FC<SecureAuthFlowProps> = ({ children }) => {
     console.log("User chose to skip verification");
     toast.warning('Skipping verification for this session.', { duration: 3000 });
     setNeedsFaceVerification(false);
+    console.log("Face verification dismissed, rendering protected children next");
   };
   
   const handleRedirectToKyc = () => {
@@ -117,6 +118,7 @@ const SecureAuthFlow: React.FC<SecureAuthFlowProps> = ({ children }) => {
   };
   
   if (isLoading) {
+    console.log("Rendering loading state while checking auth/KYC");
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
@@ -186,6 +188,7 @@ const SecureAuthFlow: React.FC<SecureAuthFlowProps> = ({ children }) => {
     );
   }
   
+  console.log("Rendering protected children (post-verification)");
   // Face verification completed or not required, render the children
   return <>{children}</>;
 };
