@@ -23,11 +23,11 @@ const SignIn = () => {
   console.log("SignIn page loaded, user state:", user ? "Logged in" : "Not logged in");
   
   useEffect(() => {
-    if (user) {
+    if (user && !showFaceVerification) {
       console.log("User already logged in, redirecting to dashboard");
       navigate('/dashboard');
     }
-  }, [user, navigate]);
+  }, [user, navigate, showFaceVerification]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,28 +50,24 @@ const SignIn = () => {
         setIsLoading(false);
       } else {
         console.log("Sign in successful, checking KYC status for face verification");
-        
-        // Check KYC status and initiate face verification if approved
         try {
           const kycData = await getUserKycStatus(email);
           console.log("KYC data received:", kycData);
-          
+
           if (kycData?.status === 'Approved' && kycData.selfie) {
-            console.log("KYC approved with selfie, showing face verification. Selfie URL:", kycData.selfie);
+            console.log("KYC approved with selfie, using as reference. Selfie URL:", kycData.selfie);
             setSelfieFaceUrl(kycData.selfie);
-            setShowFaceVerification(true);
-            setIsLoading(false);
           } else {
-            console.log("KYC not approved or no selfie, proceeding to dashboard");
-            toast.success("Sign in successful!");
-            setTimeout(() => navigate('/dashboard'), 500);
-            setIsLoading(false);
+            console.log("KYC not approved or no selfie, proceeding without reference face");
+            setSelfieFaceUrl(undefined);
           }
+          setShowFaceVerification(true);
+          setIsLoading(false);
         } catch (kycError) {
           console.error("Error checking KYC status:", kycError);
-          // If KYC check fails, still allow login but skip face verification
-          toast.success("Sign in successful!");
-          setTimeout(() => navigate('/dashboard'), 500);
+          // Require face verification even if KYC lookup fails (no reference face)
+          setSelfieFaceUrl(undefined);
+          setShowFaceVerification(true);
           setIsLoading(false);
         }
       }
@@ -89,9 +85,8 @@ const SignIn = () => {
   };
 
   const handleSkipFaceVerification = () => {
-    console.log("User chose to skip face verification");
-    toast.warning('Proceeding without face verification.', { duration: 3000 });
-    setTimeout(() => navigate('/dashboard'), 500);
+    console.log("User attempted to skip face verification");
+    toast.warning('Face verification is required to continue.', { duration: 3000 });
   };
 
   if (showFaceVerification) {

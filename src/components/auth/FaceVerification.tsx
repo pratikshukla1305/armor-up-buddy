@@ -12,6 +12,7 @@ import { useFaceVerificationSession } from '@/hooks/useFaceVerificationSession';
 import FaceVerificationVideo from './FaceVerificationVideo';
 import FaceVerificationControls from './FaceVerificationControls';
 import FaceVerificationAlerts from './FaceVerificationAlerts';
+import { useCameraContext } from '@/contexts/CameraContext';
 
 interface FaceVerificationProps {
   onSuccess: () => void;
@@ -31,6 +32,7 @@ const FaceVerification: React.FC<FaceVerificationProps> = ({
   const initializedRef = useRef(false);
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { attach, isActive } = useCameraContext();
 
   const {
     isModelLoaded,
@@ -118,12 +120,33 @@ const FaceVerification: React.FC<FaceVerificationProps> = ({
     };
   }, [stopMonitoring, cleanup]);
 
+  // Auto-attach global camera stream when active
+  useEffect(() => {
+    if (isActive) {
+      attach(videoRef).then((success) => {
+        if (success) {
+          setIsCameraReady(true);
+          setVerificationMessage('Camera is ready. Click "Verify Identity" to proceed.');
+        }
+      });
+    }
+  }, [isActive, attach, setIsCameraReady, setVerificationMessage]);
+
   // Start camera handler
   const handleStartCamera = async () => {
     console.log('Start camera button clicked');
     setErrorMessage('');
     setVerificationMessage('Starting camera...');
+
+    // Try attaching to global camera first
+    const attached = await attach(videoRef);
+    if (attached) {
+      setIsCameraReady(true);
+      setVerificationMessage('Camera is ready. Click "Verify Identity" to proceed.');
+      return;
+    }
     
+    // Fallback to local camera hook
     const result = await startCamera(videoRef);
     console.log('Camera start result:', result);
     
