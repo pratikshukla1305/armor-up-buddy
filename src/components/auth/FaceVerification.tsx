@@ -112,11 +112,11 @@ const FaceVerification: React.FC<FaceVerificationProps> = ({
   useEffect(() => {
     return () => {
       console.log('FaceVerification component unmounting, cleaning up...');
-      stopStream();
+      // Do not stop camera stream here to avoid abrupt shutdowns on re-mounts
       stopMonitoring();
       cleanup();
     };
-  }, [stopStream, stopMonitoring, cleanup]);
+  }, [stopMonitoring, cleanup]);
 
   // Start camera handler
   const handleStartCamera = async () => {
@@ -151,6 +151,14 @@ const FaceVerification: React.FC<FaceVerificationProps> = ({
     // Force page reload to retry model loading
     window.location.reload();
   }, [setErrorMessage, setVerificationMessage]);
+
+  // Cancel handler: stops camera and monitoring explicitly
+  const handleCancel = useCallback(() => {
+    console.log('Cancelling face verification, stopping camera and monitoring');
+    stopMonitoring();
+    stopStream();
+    onCancel();
+  }, [onCancel, stopMonitoring, stopStream]);
 
   // Start continuous face monitoring
   const startMonitoringFace = () => {
@@ -267,17 +275,16 @@ const FaceVerification: React.FC<FaceVerificationProps> = ({
           
           if (isMatch) {
             console.log('Face verification successful!');
-            setVerificationMessage('Verification successful! Continuing to monitor for security.');
+            setVerificationMessage('Verification successful!');
             toast.success('Identity verified successfully!');
             
             // Update session as verified
             await endSession('verified');
             
-            startMonitoringFace();
-            
-            setTimeout(() => {
-              onSuccess();
-            }, 1000);
+            // Stop camera explicitly before leaving
+            stopMonitoring();
+            stopStream();
+            onSuccess();
           } else {
             console.log('Face verification failed - no match');
             setVerificationMessage('Verification failed. Face does not match the registered face.');
@@ -302,11 +309,10 @@ const FaceVerification: React.FC<FaceVerificationProps> = ({
           // Update session as verified
           await endSession('verified');
           
-          startMonitoringFace();
-          
-          setTimeout(() => {
-            onSuccess();
-          }, 1000);
+          // Stop camera explicitly before leaving
+          stopMonitoring();
+          stopStream();
+          onSuccess();
         }
       } else {
         console.log('No face detected during verification');
@@ -375,7 +381,7 @@ const FaceVerification: React.FC<FaceVerificationProps> = ({
           isVerifying={isVerifying}
           verificationMessage={verificationMessage}
           errorMessage={errorMessage}
-          onCancel={onCancel}
+          onCancel={handleCancel}
           onCameraReady={handleCameraReady}
         />
         
@@ -389,7 +395,7 @@ const FaceVerification: React.FC<FaceVerificationProps> = ({
           errorMessage={errorMessage}
           onStartCamera={handleStartCamera}
           onVerifyFace={verifyFace}
-          onCancel={onCancel}
+          onCancel={handleCancel}
           onRetryModels={handleRetryModels}
         />
       </div>

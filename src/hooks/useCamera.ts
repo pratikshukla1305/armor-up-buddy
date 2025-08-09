@@ -17,7 +17,24 @@ export const useCamera = () => {
       console.log('Starting camera initialization...');
       isInitializingRef.current = true;
       
-      // Stop any existing stream
+      // If an active stream exists, reattach to the provided video without restarting
+      if (streamRef.current && streamRef.current.active) {
+        console.log('Reusing existing active camera stream');
+        const video = videoRef.current;
+        if (!video) {
+          throw new Error('Video element not available');
+        }
+        video.srcObject = streamRef.current;
+        video.autoplay = true;
+        video.playsInline = true;
+        video.muted = true;
+        await video.play().catch(() => {});
+        setIsCameraReady(true);
+        console.log('Existing stream reattached to video element');
+        return { success: true };
+      }
+
+      // Stop any existing stream before starting new one
       if (streamRef.current) {
         console.log('Stopping existing stream before starting new one');
         streamRef.current.getTracks().forEach(track => track.stop());
