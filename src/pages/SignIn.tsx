@@ -23,9 +23,12 @@ const SignIn = () => {
   console.log("SignIn page loaded, user state:", user ? "Logged in" : "Not logged in");
   
   useEffect(() => {
-    if (user && !showFaceVerification) {
+    const requireFV = sessionStorage.getItem('require_face_verification') === 'true';
+    if (user && !showFaceVerification && !requireFV) {
       console.log("User already logged in, redirecting to dashboard");
       navigate('/dashboard');
+    } else if (user && requireFV) {
+      console.log("Face verification required for this login; staying on page.");
     }
   }, [user, navigate, showFaceVerification]);
 
@@ -42,11 +45,14 @@ const SignIn = () => {
     
     try {
       console.log("Attempting to sign in with:", email);
+      // Enforce face verification after login
+      sessionStorage.setItem('require_face_verification', 'true');
       const { error } = await signIn(email, password);
       
       if (error) {
         console.error("Sign-in error:", error.message);
         toast.error(`Sign-in error: ${error.message}`);
+        sessionStorage.removeItem('require_face_verification');
         setIsLoading(false);
       } else {
         console.log("Sign in successful, checking KYC status for face verification");
@@ -80,6 +86,7 @@ const SignIn = () => {
 
   const handleFaceVerificationSuccess = () => {
     console.log("Face verification successful, proceeding to dashboard");
+    sessionStorage.removeItem('require_face_verification');
     toast.success("Identity verified successfully! Welcome back.");
     setTimeout(() => navigate('/dashboard'), 500);
   };

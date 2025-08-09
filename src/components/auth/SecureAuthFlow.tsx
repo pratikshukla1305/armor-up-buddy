@@ -61,14 +61,8 @@ const SecureAuthFlow: React.FC<SecureAuthFlowProps> = ({ children }) => {
             setSelfieFaceUrl(kycData.selfie);
           }
 
-          const hasVerified = localStorage.getItem(`face_verified_${user.id}`);
-
-          if (!hasVerified) {
-            console.log("Face verification needed - starting verification flow");
-            setNeedsFaceVerification(true);
-          } else {
-            console.log("Face already verified this session");
-          }
+          console.log("Face verification required on each login - starting verification flow");
+          setNeedsFaceVerification(true);
         } else {
           console.log("KYC not approved, status:", kycData?.status);
         }
