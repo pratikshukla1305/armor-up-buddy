@@ -63,18 +63,23 @@ const SignIn = () => {
           if (kycData?.status === 'Approved' && kycData.selfie) {
             console.log("KYC approved with selfie, using as reference. Selfie URL:", kycData.selfie);
             setSelfieFaceUrl(kycData.selfie);
+            setShowFaceVerification(true);
+            setIsLoading(false);
           } else {
-            console.log("KYC not approved or no selfie, proceeding without reference face");
-            setSelfieFaceUrl(undefined);
+            console.log("KYC not approved or selfie missing - blocking sign-in until selfie provided");
+            toast.error('Please complete e-KYC with a selfie to sign in.');
+            sessionStorage.removeItem('require_face_verification');
+            setIsLoading(false);
+            navigate('/e-kyc');
+            return;
           }
-          setShowFaceVerification(true);
-          setIsLoading(false);
         } catch (kycError) {
           console.error("Error checking KYC status:", kycError);
-          // Require face verification even if KYC lookup fails (no reference face)
-          setSelfieFaceUrl(undefined);
-          setShowFaceVerification(true);
+          toast.error('Unable to validate KYC. Please complete e-KYC with a selfie.');
+          sessionStorage.removeItem('require_face_verification');
           setIsLoading(false);
+          navigate('/e-kyc');
+          return;
         }
       }
     } catch (err: any) {

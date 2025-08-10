@@ -57,6 +57,7 @@ const FaceVerificationControls: React.FC<FaceVerificationControlsProps> = ({
         <Button 
           className="w-full bg-green-600 hover:bg-green-700 text-lg py-6" 
           onClick={onVerifyFace}
+          disabled={!expectedFaceEmbedding}
         >
           <ShieldCheck className="mr-2 h-5 w-5" /> Verify Identity
         </Button>

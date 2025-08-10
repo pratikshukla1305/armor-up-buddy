@@ -124,12 +124,12 @@ export const useFaceApi = () => {
 
   const compareFaces = useCallback((descriptor: Float32Array) => {
     if (!expectedFaceEmbedding) {
-      console.log('No expected face embedding available for comparison');
-      return null;
+      console.log('No expected face embedding available; failing comparison');
+      return false;
     }
     
     const distance = faceapi.euclideanDistance(expectedFaceEmbedding, descriptor);
-    const threshold = 0.6; // Slightly more lenient threshold for better recognition
+    const threshold = 0.5; // Stricter threshold to reduce false accepts
     const isMatch = distance <= threshold;
     
     console.log(`Face comparison - Distance: ${distance.toFixed(3)}, Threshold: ${threshold}, Match: ${isMatch}`);

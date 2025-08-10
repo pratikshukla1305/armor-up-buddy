@@ -100,8 +100,9 @@ const FaceVerification: React.FC<FaceVerificationProps> = ({
           console.log('Loading expected face...');
           await loadExpectedFace(expectedFaceUrl);
         } else if (session && !expectedFaceUrl) {
-          console.log('No reference face URL provided, but session started');
-          setVerificationMessage('Facial recognition models loaded. Ready to start camera for live verification.');
+          console.log('No reference face URL provided; blocking verification until selfie is provided');
+          setErrorMessage('Reference selfie not found for this account. Please complete e-KYC selfie to enable face verification.');
+          setVerificationMessage('');
         }
         initializedRef.current = true;
       }
@@ -284,8 +285,15 @@ const FaceVerification: React.FC<FaceVerificationProps> = ({
       if (detections) {
         console.log('Face detected during verification with confidence:', detections.detection.score);
         
-        if (expectedFaceEmbedding) {
-          // If we have a reference face, verify against it
+        if (!expectedFaceEmbedding) {
+          console.log('No reference face available; blocking verification');
+          setVerificationMessage('Reference selfie not found. Please complete e-KYC selfie to sign in.');
+          toast.error('Reference selfie not found. Please complete e-KYC selfie to sign in.');
+          await recordDetection(true, detections.detection.score, null, detections.detection.box);
+          await endSession('failed');
+          setIsVerifying(false);
+          return;
+        } else {
           const isMatch = compareFaces(detections.descriptor);
           
           // Record the verification attempt
@@ -315,27 +323,6 @@ const FaceVerification: React.FC<FaceVerificationProps> = ({
             await endSession('failed');
             setIsVerifying(false);
           }
-        } else {
-          // If no reference face, just proceed with live monitoring
-          console.log('No reference face available, proceeding with live monitoring');
-          setVerificationMessage('Face detected. Starting live monitoring...');
-          toast.success('Face detected successfully!');
-          
-          // Record the detection
-          await recordDetection(
-            true,
-            detections.detection.score,
-            null,
-            detections.detection.box
-          );
-          
-          // Update session as verified
-          await endSession('verified');
-          
-          // Stop camera explicitly before leaving
-          stopMonitoring();
-          stopStream();
-          onSuccess();
         }
       } else {
         console.log('No face detected during verification');
