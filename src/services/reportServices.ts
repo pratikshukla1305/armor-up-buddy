@@ -60,12 +60,28 @@ export const submitReportToOfficer = async (reportId: string) => {
 // Get reports for officer
 export const getOfficerReports = async () => {
   try {
-    console.log("Fetching officer reports...");
+    console.log("Fetching officer reports via edge function...");
+
+    // Prefer edge function (service role) to bypass RLS for officer views
+    try {
+      const { data: fnRes, error: fnError } = await supabase.functions.invoke('get-officer-reports', {
+        body: { limit: 200 },
+      });
+
+      if (!fnError && fnRes?.data && Array.isArray(fnRes.data)) {
+        console.log("Edge function returned", fnRes.data.length, "reports");
+        // Ensure consistent shape with mock enhancer
+        return addMockEvidenceToReports(fnRes.data);
+      } else if (fnError) {
+        console.warn("Edge function get-officer-reports error:", fnError);
+      }
+    } catch (edgeErr) {
+      console.warn("Failed to fetch via edge function, falling back:", edgeErr);
+    }
     
-    // Ensure fallback to demo data if needed
-    let reports = [];
-    
-    // First, fetch reports
+    // Fallback: direct client queries (may be limited by RLS)
+    let reports: any[] = [];
+
     const { data: fetchedReports, error: reportsError } = await supabase
       .from('crime_reports')
       .select('*')
@@ -82,7 +98,6 @@ export const getOfficerReports = async () => {
     
     if (reports.length === 0) {
       console.log("No reports found with matching status, using mock data");
-      // Create a mock report for demo purposes
       const mockReport = {
         id: "mock-report-id-123",
         title: "Mock Traffic Violation Report",
@@ -125,13 +140,11 @@ export const getOfficerReports = async () => {
         ]
       };
       
-      reports = [mockReport];
-      return reports;
+      return [mockReport];
     }
     
-    // Fetch all evidence for these reports in a single query
     const reportIds = reports.map(report => report.id);
-    let allEvidence = [];
+    let allEvidence: any[] = [];
     
     const { data: fetchedEvidence, error: evidenceError } = await supabase
       .from('evidence')
@@ -146,8 +159,7 @@ export const getOfficerReports = async () => {
       console.log("Fetched evidence:", allEvidence);
     }
     
-    // Fetch all PDFs for these reports in a single query
-    let allPdfs = [];
+    let allPdfs: any[] = [];
     
     const { data: fetchedPdfs, error: pdfsError } = await supabase
       .from('report_pdfs')
@@ -162,7 +174,6 @@ export const getOfficerReports = async () => {
       console.log("Fetched PDFs:", allPdfs);
     }
     
-    // Organize evidence and PDFs by report_id
     const evidenceByReportId: Record<string, any[]> = {};
     const pdfsByReportId: Record<string, any[]> = {};
     
@@ -184,7 +195,6 @@ export const getOfficerReports = async () => {
       });
     }
     
-    // Combine data into reports
     const reportsWithRelations = reports.map(report => ({
       ...report,
       evidence: evidenceByReportId[report.id] || [],
@@ -193,15 +203,10 @@ export const getOfficerReports = async () => {
     
     console.log("Reports with evidence:", reportsWithRelations);
     
-    // If we still don't have any reports with evidence, add mock evidence
-    const reportsWithEvidence = addMockEvidenceToReports(reportsWithRelations);
-    
-    return reportsWithEvidence;
+    return addMockEvidenceToReports(reportsWithRelations);
   } catch (error: any) {
     console.error('Error fetching officer reports:', error);
     toast.error("Failed to load reports. Using sample data instead.");
-    
-    // Return mock data in case of error
     return addMockEvidenceToReports([]);
   }
 };
