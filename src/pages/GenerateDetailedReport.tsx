@@ -444,6 +444,31 @@ const GenerateDetailedReport = () => {
     
     try {
       await submitReportToOfficer(reportId);
+
+      // Ensure officer materials are synchronized with latest PDFs
+      try {
+        const { data: pdfs } = await supabase
+          .from('report_pdfs')
+          .select('*')
+          .eq('report_id', reportId)
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        const latest = pdfs && pdfs[0];
+        if (latest) {
+          await supabase.functions.invoke('update-officer-materials', {
+            body: {
+              reportId,
+              pdfId: latest.id,
+              pdfName: latest.file_name,
+              pdfUrl: latest.file_url,
+              pdfIsOfficial: latest.is_official || false,
+            },
+          });
+        }
+      } catch (syncErr) {
+        console.warn('Officer materials sync skipped/failed:', syncErr);
+      }
       
       toast.success("Report sent to officer for further processing");
       

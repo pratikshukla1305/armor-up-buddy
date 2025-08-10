@@ -21,6 +21,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 
 type ReportListProps = {
   limit?: number;
@@ -148,28 +149,23 @@ const ReportsList = ({ limit }: ReportListProps) => {
         link.click();
         document.body.removeChild(link);
         
-        try {
-          console.log("Updating officer materials with PDF info");
-          const { data, error } = await fetch('/api/update-officer-materials', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              reportId: report.id,
-              pdfId: pdfFile.id,
-              pdfName: pdfFile.file_name,
-              pdfUrl: pdfFile.file_url,
-              pdfIsOfficial: pdfFile.is_official || false
-            }),
-          }).then(res => res.json());
-          
-          if (error) {
-            console.error("Error updating officer materials:", error);
+          try {
+            console.log("Updating officer materials with PDF info via edge function");
+            const { data, error } = await supabase.functions.invoke('update-officer-materials', {
+              body: {
+                reportId: report.id,
+                pdfId: pdfFile.id,
+                pdfName: pdfFile.file_name,
+                pdfUrl: pdfFile.file_url,
+                pdfIsOfficial: pdfFile.is_official || false,
+              },
+            });
+            if (error) {
+              console.error("Error updating officer materials:", error);
+            }
+          } catch (updateError) {
+            console.error("Failed to update officer materials:", updateError);
           }
-        } catch (updateError) {
-          console.error("Failed to update officer materials:", updateError);
-        }
         
         if (officer && officer.id) {
           await logPdfDownload(
@@ -254,18 +250,14 @@ const ReportsList = ({ limit }: ReportListProps) => {
     link.click();
     document.body.removeChild(link);
     
-    fetch('/api/update-officer-materials', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
+    supabase.functions.invoke('update-officer-materials', {
+      body: {
         reportId: reportId,
         pdfId: pdf.id,
         pdfName: pdf.file_name,
         pdfUrl: pdf.file_url,
-        pdfIsOfficial: pdf.is_official || false
-      }),
+        pdfIsOfficial: pdf.is_official || false,
+      },
     }).catch(err => console.error("Failed to update officer materials:", err));
     return null;
   };
