@@ -85,7 +85,7 @@ export const getOfficerReports = async () => {
     const { data: fetchedReports, error: reportsError } = await supabase
       .from('crime_reports')
       .select('*')
-      .in('status', ['submitted', 'processing', 'completed'])
+      .in('status', ['submitted', 'processing', 'closed'])
       .order('updated_at', { ascending: false });
     
     if (reportsError) {
@@ -214,10 +214,18 @@ export const getOfficerReports = async () => {
 // Update report status by officer
 export const updateReportStatus = async (reportId: string, status: string, officerNotes?: string) => {
   try {
+    // Normalize to allowed statuses
+    const allowed = ['draft', 'submitted', 'processing', 'closed']
+    const s = (status || '').toString().toLowerCase()
+    const normalizedStatus = s === 'completed' || s === 'rejected' ? 'closed' : s
+    if (!allowed.includes(normalizedStatus)) {
+      throw new Error(`Invalid status. Allowed: ${allowed.join(', ')}`)
+    }
+
     // Try edge function first (service role)
     try {
       const { data: fnRes, error: fnErr } = await supabase.functions.invoke('update-report-status', {
-        body: { reportId, status, officerNotes },
+        body: { reportId, status: normalizedStatus, officerNotes },
       });
       if (!fnErr && fnRes?.success) {
         return fnRes.data;
@@ -230,7 +238,7 @@ export const updateReportStatus = async (reportId: string, status: string, offic
     }
 
     const updateData: any = {
-      status,
+      status: normalizedStatus,
       updated_at: new Date().toISOString(),
     };
     if (officerNotes) updateData.officer_notes = officerNotes;
@@ -256,7 +264,7 @@ export const updateReportStatus = async (reportId: string, status: string, offic
         report_id: reportId,
         notification_type: 'officer_action',
         is_read: false,
-        message: `An officer has updated your report status to: ${status}`,
+        message: `An officer has updated your report status to: ${normalizedStatus}`,
       });
     }
 

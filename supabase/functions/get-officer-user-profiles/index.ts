@@ -23,20 +23,55 @@ serve(async (req) => {
       global: { headers: { Authorization: authHeader ?? '' } },
     })
 
-    // Fetch all profiles
-    const { data: profiles, error: profilesError } = await supabase
-      .from('profiles')
-      .select('id, email, full_name, created_at, updated_at')
-
-    if (profilesError) {
-      console.error('profilesError:', profilesError)
-      return new Response(
-        JSON.stringify({ success: false, error: profilesError.message }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-      )
+    // Prefer fetching all auth users (admin) and enrich with profiles
+    let adminUsers: any[] = []
+    try {
+      const { data: adminData, error: adminErr }: any = await (supabase as any).auth.admin.listUsers({ page: 1, perPage: 1000 })
+      if (adminErr) console.warn('admin.listUsers error:', adminErr)
+      else adminUsers = adminData?.users || []
+    } catch (e) {
+      console.warn('admin.listUsers failed:', e)
     }
 
-    const userIds = (profiles ?? []).map((p) => p.id)
+    let baseUsers: any[] = []
+    let userIds: string[] = []
+
+    if (adminUsers.length > 0) {
+      userIds = adminUsers.map((u: any) => u.id)
+      const { data: profs, error: profErr } = await supabase
+        .from('profiles')
+        .select('id, email, full_name, created_at, updated_at')
+        .in('id', userIds)
+      if (profErr) console.warn('profilesError:', profErr)
+      const profilesById = new Map((profs || []).map((p: any) => [p.id, p]))
+
+      baseUsers = adminUsers.map((u: any) => {
+        const p: any = profilesById.get(u.id) || {}
+        return {
+          id: u.id,
+          email: p.email || u.email,
+          full_name: p.full_name || u.user_metadata?.full_name || null,
+          created_at: p.created_at || u.created_at,
+          updated_at: p.updated_at || u.updated_at,
+        }
+      })
+    } else {
+      // Fallback: profiles table only
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, email, full_name, created_at, updated_at')
+
+      if (profilesError) {
+        console.error('profilesError:', profilesError)
+        return new Response(
+          JSON.stringify({ success: false, error: profilesError.message }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+        )
+      }
+
+      baseUsers = profiles || []
+      userIds = (profiles ?? []).map((p) => p.id)
+    }
 
     // Fetch reports for all users
     let reports: any[] = []
@@ -85,25 +120,21 @@ serve(async (req) => {
       byUserAlerts.set(a.reported_by, arr)
     }
 
-    const latestKycByUser = new Map<string, any>()
+    const anyApprovedByUser = new Map<string, boolean>()
     for (const k of kycs) {
-      const existing = latestKycByUser.get(k.user_id)
-      const kTime = new Date(k.created_at ?? k.submission_date ?? 0).getTime()
-      const eTime = existing ? new Date(existing.created_at ?? existing.submission_date ?? 0).getTime() : -1
-      if (!existing || kTime > eTime) latestKycByUser.set(k.user_id, k)
+      const s = (k.status || '').toString().toLowerCase()
+      if (s === 'approved' || s === 'verified') anyApprovedByUser.set(k.user_id, true)
+      else if (!anyApprovedByUser.has(k.user_id)) anyApprovedByUser.set(k.user_id, false)
     }
 
-    const result = (profiles ?? []).map((profile) => {
+    const result = (baseUsers ?? []).map((profile) => {
       const r = byUserReports.get(profile.id) ?? []
       const a = byUserAlerts.get(profile.id) ?? []
-      const k = latestKycByUser.get(profile.id)
+      const kycVerified = anyApprovedByUser.get(profile.id) === true
 
       const approved = r.filter((x) => (x.status || '').toLowerCase() === 'approved').length
       const rejected = r.filter((x) => (x.status || '').toLowerCase() === 'rejected').length
       const confirmedAlerts = a.filter((x) => (x.status || '').toLowerCase() === 'confirmed').length
-
-      const kycStatus = (k?.status || '').toString().toLowerCase()
-      const kycVerified = kycStatus === 'approved' || kycStatus === 'verified'
 
       return {
         ...profile,

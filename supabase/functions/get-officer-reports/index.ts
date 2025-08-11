@@ -30,7 +30,7 @@ Deno.serve(async (req) => {
     const { data: reports, error: reportsError } = await supabase
       .from('crime_reports')
       .select('id, title, description, location, detailed_location, report_date, updated_at, status, user_id')
-      .in('status', ['submitted', 'processing', 'completed'])
+      .in('status', ['submitted', 'processing', 'closed'])
       .order('updated_at', { ascending: false })
       .limit(limit)
 

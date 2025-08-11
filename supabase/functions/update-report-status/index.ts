@@ -19,9 +19,20 @@ serve(async (req) => {
 
     const { reportId, status, officerNotes } = await req.json()
 
-    if (!reportId || !status) {
+    const allowed = ['draft', 'submitted', 'processing', 'closed']
+    let targetStatus = (status || '').toString().toLowerCase()
+    if (targetStatus === 'completed' || targetStatus === 'rejected') targetStatus = 'closed'
+
+    if (!reportId || !targetStatus) {
       return new Response(
         JSON.stringify({ success: false, error: 'reportId and status are required' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      )
+    }
+
+    if (!allowed.includes(targetStatus)) {
+      return new Response(
+        JSON.stringify({ success: false, error: `Invalid status. Allowed: ${allowed.join(', ')}` }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       )
     }
@@ -36,7 +47,7 @@ serve(async (req) => {
 
     // Update the report
     const updateData: Record<string, any> = {
-      status,
+      status: targetStatus,
       updated_at: new Date().toISOString(),
     }
     if (officerNotes) updateData.officer_notes = officerNotes
