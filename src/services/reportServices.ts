@@ -214,45 +214,52 @@ export const getOfficerReports = async () => {
 // Update report status by officer
 export const updateReportStatus = async (reportId: string, status: string, officerNotes?: string) => {
   try {
+    // Try edge function first (service role)
+    try {
+      const { data: fnRes, error: fnErr } = await supabase.functions.invoke('update-report-status', {
+        body: { reportId, status, officerNotes },
+      });
+      if (!fnErr && fnRes?.success) {
+        return fnRes.data;
+      }
+      if (fnErr) {
+        console.warn('Edge function update-report-status error:', fnErr);
+      }
+    } catch (edgeErr) {
+      console.warn('Failed to call update-report-status, falling back:', edgeErr);
+    }
+
     const updateData: any = {
       status,
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
     };
-    
-    if (officerNotes) {
-      updateData.officer_notes = officerNotes;
-    }
-    
+    if (officerNotes) updateData.officer_notes = officerNotes;
+
     const { data, error } = await supabase
       .from('crime_reports')
       .update(updateData)
       .eq('id', reportId)
       .select();
-    
-    if (error) {
-      throw error;
-    }
 
-    // Get the user ID for this report to send notification
+    if (error) throw error;
+
+    // Fetch user_id for notifications
     const { data: reportData, error: reportError } = await supabase
       .from('crime_reports')
       .select('user_id')
       .eq('id', reportId)
       .single();
-    
+
     if (!reportError && reportData) {
-      // Create user notification
-      await supabase
-        .from('user_notifications')
-        .insert({
-          user_id: reportData.user_id,
-          report_id: reportId,
-          notification_type: 'officer_action',
-          is_read: false,
-          message: `An officer has updated your report status to: ${status}`
-        });
+      await supabase.from('user_notifications').insert({
+        user_id: reportData.user_id,
+        report_id: reportId,
+        notification_type: 'officer_action',
+        is_read: false,
+        message: `An officer has updated your report status to: ${status}`,
+      });
     }
-    
+
     return data;
   } catch (error: any) {
     console.error('Error updating report status:', error);

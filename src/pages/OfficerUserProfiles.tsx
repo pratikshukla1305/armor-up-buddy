@@ -18,81 +18,27 @@ const OfficerUserProfiles = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Fetch actual user profiles from the database
-  useEffect(() => {
-    const fetchUserProfiles = async () => {
-      try {
-        setLoading(true);
-        
-        // Get profiles and join with associated reports and KYC verifications
-        const { data: profiles, error: profilesError } = await supabase
-          .from('profiles')
-          .select('*');
-          
-        if (profilesError) throw profilesError;
+// Fetch actual user profiles from a secured edge function (service role)
+useEffect(() => {
+  const fetchUserProfiles = async () => {
+    try {
+      setLoading(true);
+      const { data: fnRes, error } = await supabase.functions.invoke('get-officer-user-profiles', {
+        body: {},
+      });
+      if (error) throw error;
+      const rows = fnRes?.data || [];
+      setUserProfiles(rows);
+    } catch (error) {
+      console.error('Error fetching user profiles:', error);
+      toast.error('Failed to load user profiles');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-        // Fetch reports for each user
-        const enhancedProfiles = await Promise.all(
-          (profiles || []).map(async (profile) => {
-            // Get reports count
-            const { data: reports, error: reportsError } = await supabase
-              .from('crime_reports')
-              .select('id, status')
-              .eq('user_id', profile.id);
-
-            if (reportsError) console.error('Error fetching reports:', reportsError);
-
-            // Get alerts count - explicitly request the status field
-            const { data: alerts, error: alertsError } = await supabase
-              .from('sos_alerts')
-              .select('alert_id, status')  // Explicitly include status field
-              .eq('reported_by', profile.id);
-
-            if (alertsError) console.error('Error fetching alerts:', alertsError);
-
-            // Get KYC status
-            const { data: kyc, error: kycError } = await supabase
-              .from('kyc_verifications')
-              .select('status')
-              .eq('user_id', profile.id)
-              .order('created_at', { ascending: false })
-              .limit(1)
-              .single();
-
-            if (kycError && kycError.code !== 'PGRST116') {
-              console.error('Error fetching KYC:', kycError);
-            }
-
-            const approvedReports = reports?.filter(r => r.status === 'approved')?.length || 0;
-            const rejectedReports = reports?.filter(r => r.status === 'rejected')?.length || 0;
-            
-            // Safely access the status property on alerts items
-            const confirmedAlerts = alerts?.filter(a => a?.status === 'confirmed')?.length || 0;
-
-            return {
-              ...profile,
-              reports_submitted: reports?.length || 0,
-              reports_approved: approvedReports,
-              reports_rejected: rejectedReports,
-              alerts_submitted: alerts?.length || 0,
-              alerts_confirmed: confirmedAlerts,
-              kyc_verified: kyc?.status === 'Approved',
-              last_active: profile.updated_at || profile.created_at,
-            };
-          })
-        );
-        
-        setUserProfiles(enhancedProfiles);
-      } catch (error) {
-        console.error('Error fetching user profiles:', error);
-        toast.error('Failed to load user profiles');
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchUserProfiles();
-  }, []);
+  fetchUserProfiles();
+}, []);
 
   const selectedUser = userProfiles.find(user => user.id === selectedUserId);
 
